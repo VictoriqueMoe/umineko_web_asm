@@ -89,6 +89,7 @@ target_include_directories(umineko-web PRIVATE
 
 target_compile_definitions(umineko-web PRIVATE
     LINUX
+    PUBLIC_RELEASE
 )
 
 # Static libraries
@@ -131,8 +132,14 @@ if(EMSCRIPTEN)
         -sALLOW_MEMORY_GROWTH
         -sINITIAL_MEMORY=268435456
         -sFORCE_FILESYSTEM
+        -lidbfs.js
         -sEXPORTED_FUNCTIONS=["_main","_malloc","_free"]
         -sEXPORTED_RUNTIME_METHODS=["ccall","cwrap","FS"]
+        -sABORTING_MALLOC=0
+        -sDISABLE_EXCEPTION_CATCHING=0
+        -sEXIT_RUNTIME=0
+        -sASSERTIONS=1
+        -Wl,--wrap=main
         --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/web/index.html
     )
 

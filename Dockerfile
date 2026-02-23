@@ -4,17 +4,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /build
-
-RUN git clone https://github.com/VictoriqueMoe/onscripter-ru.git /build/onscripter-ru
-
-COPY CMakeLists.txt /build/umineko-web/CMakeLists.txt
-COPY src /build/umineko-web/src
-COPY web /build/umineko-web/web
-
 WORKDIR /build/umineko-web
 
-# Build SDL2_gpu
 RUN git clone https://github.com/umineko-project/sdl-gpu.git deps/sdl-gpu && \
     mkdir -p deps/sdl-gpu/build-wasm && \
     cd deps/sdl-gpu/build-wasm && \
@@ -40,7 +31,6 @@ RUN git clone https://github.com/umineko-project/sdl-gpu.git deps/sdl-gpu && \
     cd /build/umineko-web/deps/sdl-gpu/include && \
     for f in SDL_gpu*.h; do ln -sf "../$f" "SDL2/$f"; done
 
-# Build FFmpeg 3.3.9
 RUN cd deps && \
     curl -sL https://ffmpeg.org/releases/ffmpeg-3.3.9.tar.bz2 | tar xj && \
     cd ffmpeg-3.3.9 && \
@@ -62,25 +52,30 @@ RUN cd deps && \
     emmake make -j$(nproc) && \
     emmake make install
 
-# Build the engine
+ARG ONS_CACHE_BUST=0
+RUN git clone https://github.com/VictoriqueMoe/onscripter-ru.git /build/onscripter-ru
+
+RUN cc -o /build/embed /build/onscripter-ru/Tools/embed/embed.c && \
+    cd /build/onscripter-ru && \
+    mkdir -p /build/umineko-web/src && \
+    bash -c 'source Scripts/resources.sh && /build/embed "${RESOURCE_LIST[@]}" /build/umineko-web/src/Resources.cpp'
+
+COPY CMakeLists.txt /build/umineko-web/CMakeLists.txt
+COPY src/platform /build/umineko-web/src/platform
+COPY src/stubs /build/umineko-web/src/stubs
+COPY web /build/umineko-web/web
+
 RUN mkdir -p build && cd build && \
     emcmake cmake .. -DCMAKE_BUILD_TYPE=Release && \
     emmake make -j$(nproc)
 
-# Output stage — just the web files
 FROM nginx:alpine
 COPY --from=0 /build/umineko-web/build/umineko-web.html /usr/share/nginx/html/index.html
 COPY --from=0 /build/umineko-web/build/umineko-web.js /usr/share/nginx/html/umineko-web.js
 COPY --from=0 /build/umineko-web/build/umineko-web.wasm /usr/share/nginx/html/umineko-web.wasm
-
-# Required headers for SharedArrayBuffer (future pthreads support)
-RUN echo 'server { \
-    listen 80; \
-    location / { \
-        root /usr/share/nginx/html; \
-        add_header Cross-Origin-Opener-Policy same-origin; \
-        add_header Cross-Origin-Embedder-Policy require-corp; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY scripts/generate-manifest.sh /usr/local/bin/generate-manifest.sh
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

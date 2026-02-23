@@ -34,17 +34,139 @@
     <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
 
     <script>
+        const EAGER_PATTERNS = [
+            /^\/default\.cfg$/,
+            /^\/en\.file$/,
+            /^\/chiru\.file$/,
+            /^\/ru\.file$/,
+            /^\/game\.hash$/,
+            /^\/fonts\//
+        ];
+
+        window.gameFileSet = new Set();
+
+        function shouldEagerLoad(path) {
+            for (let i = 0; i < EAGER_PATTERNS.length; i++) {
+                if (EAGER_PATTERNS[i].test(path)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function eagerFetch(vfsPath, url) {
+            Module.addRunDependency('file:' + vfsPath);
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'arraybuffer';
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    FS.writeFile(vfsPath, new Uint8Array(xhr.response));
+                } else {
+                    console.warn('Failed to fetch ' + url + ' (status ' + xhr.status + ')');
+                }
+                Module.removeRunDependency('file:' + vfsPath);
+            };
+            xhr.onerror = function() {
+                console.warn('Failed to fetch ' + url);
+                Module.removeRunDependency('file:' + vfsPath);
+            };
+            xhr.send();
+        }
+
+        function setupGameFiles() {
+            Module.addRunDependency('manifest');
+            const loadingEl = document.getElementById('loading');
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/manifest.json', true);
+            xhr.responseType = 'json';
+            xhr.onload = function() {
+                if (xhr.status !== 200 || !xhr.response) {
+                    console.error('Failed to load manifest');
+                    Module.removeRunDependency('manifest');
+                    return;
+                }
+
+                const manifest = xhr.response;
+                const dirs = manifest.dirs;
+                const files = manifest.files;
+
+                loadingEl.textContent = 'Setting up filesystem...';
+
+                for (let i = 0; i < dirs.length; i++) {
+                    try {
+                        FS.mkdirTree('/game' + dirs[i]);
+                    } catch (e) {}
+                }
+
+                let eagerCount = 0;
+                let lazyCount = 0;
+
+                for (let i = 0; i < files.length; i++) {
+                    const filePath = files[i];
+                    const vfsPath = '/game' + filePath;
+
+                    if (shouldEagerLoad(filePath)) {
+                        eagerFetch(vfsPath, '/game' + filePath);
+                        eagerCount++;
+                    } else {
+                        try {
+                            FS.writeFile(vfsPath, new Uint8Array(0));
+                            window.gameFileSet.add(vfsPath);
+                            lazyCount++;
+                        } catch (e) {
+                            console.warn('Failed to create stub: ' + vfsPath, e);
+                        }
+                    }
+                }
+
+                console.log('Filesystem setup: ' + eagerCount + ' eager, ' + lazyCount + ' lazy stubs');
+                loadingEl.textContent = 'Loading game data (' + eagerCount + ' files)...';
+                Module.removeRunDependency('manifest');
+            };
+            xhr.onerror = function() {
+                console.error('Failed to fetch manifest');
+                Module.removeRunDependency('manifest');
+            };
+            xhr.send();
+        }
+
+        (function() {
+            var origGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, attrs) {
+                if (type === 'webgl' || type === 'webgl2') {
+                    attrs = attrs || {};
+                    attrs.preserveDrawingBuffer = true;
+                }
+                return origGetContext.call(this, type, attrs);
+            };
+        })();
+
         var Module = {
             canvas: document.getElementById('canvas'),
-            onRuntimeInitialized: function() {
-                document.getElementById('loading').classList.add('hidden');
-            },
             print: function(text) { console.log(text); },
             printErr: function(text) { console.error(text); },
             setStatus: function(text) {
                 if (text) {
                     document.getElementById('loading').textContent = text;
                 }
+            },
+            preRun: [function() {
+                FS.mkdir('/game');
+                FS.mkdir('/home/web_user/.onscripter');
+                FS.mount(IDBFS, {}, '/home/web_user/.onscripter');
+                Module.addRunDependency('idbfs-sync');
+                FS.syncfs(true, function(err) {
+                    if (err) {
+                        console.warn('IDBFS initial sync error:', err);
+                    }
+                    Module.removeRunDependency('idbfs-sync');
+                });
+                setupGameFiles();
+            }],
+            onRuntimeInitialized: function() {
+                document.getElementById('loading').classList.add('hidden');
             }
         };
     </script>

@@ -4,3 +4,5 @@ services:
     ports:
       - "8080:80"
     restart: unless-stopped
+    volumes:
+      - ./game:/usr/share/nginx/html/game:ro
