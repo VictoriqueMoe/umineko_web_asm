@@ -97,7 +97,7 @@
 
                 for (let i = 0; i < dirs.length; i++) {
                     try {
-                        FS.mkdirTree('/game' + dirs[i]);
+                        FS.mkdirTree('/game/' + dirs[i]);
                     } catch (e) {}
                 }
 
@@ -106,10 +106,10 @@
 
                 for (let i = 0; i < files.length; i++) {
                     const filePath = files[i];
-                    const vfsPath = '/game' + filePath;
+                    const vfsPath = '/game/' + filePath;
 
                     if (shouldEagerLoad(filePath)) {
-                        eagerFetch(vfsPath, '/game' + filePath);
+                        eagerFetch(vfsPath, '/game/' + filePath);
                         eagerCount++;
                     } else {
                         try {
