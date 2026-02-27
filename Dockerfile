@@ -1,7 +1,7 @@
 FROM emscripten/emsdk:3.1.51
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config \
+    jq pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build/umineko-web
