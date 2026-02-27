@@ -7,6 +7,9 @@ set(CMAKE_C_STANDARD 11)
 set(ONS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../onscripter-ru")
 set(SDL_GPU_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/sdl-gpu")
 set(FFMPEG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/ffmpeg-install")
+set(LIBASS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/libass-install")
+set(HARFBUZZ_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/harfbuzz-install")
+set(FRIBIDI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/fribidi-install")
 
 set(ENGINE_SOURCES
     ${ONS_SRC_DIR}/Engine/Components/Async.cpp
@@ -85,6 +88,9 @@ target_include_directories(umineko-web PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stubs
     ${SDL_GPU_DIR}/include
     ${FFMPEG_DIR}/include
+    ${LIBASS_DIR}/include
+    ${HARFBUZZ_DIR}/include
+    ${FRIBIDI_DIR}/include
 )
 
 target_compile_definitions(umineko-web PRIVATE
@@ -104,6 +110,16 @@ foreach(fflib avformat avcodec swscale swresample avutil)
         list(APPEND STATIC_LIBS "${FFMPEG_DIR}/lib/lib${fflib}.a")
     endif()
 endforeach()
+
+if(EXISTS "${LIBASS_DIR}/lib/libass.a")
+    list(APPEND STATIC_LIBS "${LIBASS_DIR}/lib/libass.a")
+endif()
+if(EXISTS "${HARFBUZZ_DIR}/lib/libharfbuzz.a")
+    list(APPEND STATIC_LIBS "${HARFBUZZ_DIR}/lib/libharfbuzz.a")
+endif()
+if(EXISTS "${FRIBIDI_DIR}/lib/libfribidi.a")
+    list(APPEND STATIC_LIBS "${FRIBIDI_DIR}/lib/libfribidi.a")
+endif()
 
 target_link_libraries(umineko-web PRIVATE ${STATIC_LIBS})
 

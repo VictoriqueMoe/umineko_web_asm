@@ -32,7 +32,7 @@ RUN git clone https://github.com/umineko-project/sdl-gpu.git deps/sdl-gpu && \
     for f in SDL_gpu*.h; do ln -sf "../$f" "SDL2/$f"; done
 
 RUN cd deps && \
-    curl -sL https://ffmpeg.org/releases/ffmpeg-3.3.9.tar.bz2 | tar xj && \
+    curl -sL https://raw.githubusercontent.com/umineko-project/onscripter-deps/master/archives/ffmpeg-3.3.9.tar.bz2 | tar xj && \
     cd ffmpeg-3.3.9 && \
     emconfigure ./configure \
         --cc=emcc --cxx=em++ --ar=emar --ranlib=emranlib \
@@ -49,6 +49,49 @@ RUN cd deps && \
         --enable-protocol=file \
         --disable-pthreads --enable-small \
         --extra-cflags="-O2" --extra-ldflags="-O2" && \
+    emmake make -j$(nproc) && \
+    emmake make install
+
+RUN echo '#include <ft2build.h>' | emcc -sUSE_FREETYPE=1 -x c - -c -o /dev/null && \
+    cd deps && \
+    curl -sL https://raw.githubusercontent.com/umineko-project/onscripter-deps/master/archives/fribidi-1.0.5.tar.bz2 | tar xj && \
+    cd fribidi-1.0.5 && \
+    emconfigure ./configure \
+        --prefix=/build/umineko-web/deps/fribidi-install \
+        --disable-shared --disable-debug --with-glib=no && \
+    emmake make -j$(nproc) && \
+    emmake make install
+
+RUN cd deps && \
+    curl -sL https://raw.githubusercontent.com/umineko-project/onscripter-deps/master/archives/harfbuzz-2.5.2.tar.xz | tar xJ && \
+    cd harfbuzz-2.5.2 && \
+    FREETYPE_CFLAGS="-I$(em-config CACHE)/sysroot/include/freetype2" \
+    FREETYPE_LIBS="-sUSE_FREETYPE=1" \
+    CXXFLAGS="-DHB_NO_MT -DHB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR -O2" \
+    CFLAGS="-O2" \
+    emconfigure ./configure \
+        --prefix=/build/umineko-web/deps/harfbuzz-install \
+        --disable-dependency-tracking --disable-shared \
+        --with-glib=no --with-cairo=no --with-gobject=no --with-icu=no && \
+    emmake make -j$(nproc) CXXFLAGS="-DHB_NO_MT -DHB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR -O2 -Wno-error=cast-function-type-strict -Wno-error=unused-but-set-variable" && \
+    emmake make install
+
+RUN cd deps && \
+    curl -sL https://raw.githubusercontent.com/umineko-project/onscripter-deps/master/archives/libass-0.14.0.tar.xz | tar xJ && \
+    cd libass-0.14.0 && \
+    sed -i 's/\$as_echo "#define CONFIG_ICONV 1" >>confdefs.h/\$as_echo "Ignoring iconv"/' configure && \
+    FREETYPE_CFLAGS="-I$(em-config CACHE)/sysroot/include/freetype2" \
+    FREETYPE_LIBS="-sUSE_FREETYPE=1" \
+    FRIBIDI_CFLAGS="-I/build/umineko-web/deps/fribidi-install/include/fribidi" \
+    FRIBIDI_LIBS="-L/build/umineko-web/deps/fribidi-install/lib -lfribidi" \
+    HARFBUZZ_CFLAGS="-I/build/umineko-web/deps/harfbuzz-install/include/harfbuzz" \
+    HARFBUZZ_LIBS="-L/build/umineko-web/deps/harfbuzz-install/lib -lharfbuzz" \
+    CFLAGS="-I/build/umineko-web/deps/fribidi-install/include/fribidi -O2" \
+    emconfigure ./configure \
+        --prefix=/build/umineko-web/deps/libass-install \
+        --disable-shared --disable-fontconfig \
+        --disable-dependency-tracking \
+        --disable-require-system-font-provider && \
     emmake make -j$(nproc) && \
     emmake make install
 
