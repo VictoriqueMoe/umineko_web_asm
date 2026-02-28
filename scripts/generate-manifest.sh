@@ -13,7 +13,9 @@ if command -v jq >/dev/null 2>&1; then
   DIRS="$(find "$GAME_DIR" -mindepth 1 -type d -printf '%P\0' | sort -z | jq -Rsc 'split("\u0000")[:-1]')"
   FILES="$(find "$GAME_DIR" -mindepth 1 -type f -printf '%P\0' | sort -z | jq -Rsc 'split("\u0000")[:-1]')"
   jq -cn --argjson dirs "$DIRS" --argjson files "$FILES" '{dirs:$dirs,files:$files}' > "$MANIFEST"
-  echo "Manifest generated: $(jq -r 'length' <<<"$FILES") files in $(jq -r 'length' <<<"$DIRS") directories"
+  FILE_COUNT=$(printf '%s' "$FILES" | jq -r 'length')
+  DIR_COUNT=$(printf '%s' "$DIRS" | jq -r 'length')
+  echo "Manifest generated: $FILE_COUNT files in $DIR_COUNT directories"
   exit 0
 fi
 
