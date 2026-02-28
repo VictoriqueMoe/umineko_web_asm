@@ -11,8 +11,8 @@
 
 ## Subtitle Rendering
 - [x] Build libass (+ harfbuzz, fribidi) with Emscripten and replace the current stubs in web_stubs.cpp
-- [ ] Re-enable subtitle processing in pumpSynchronous() once libass stubs are replaced with real implementation
-- [ ] Only affects video cutscene subtitles, not core gameplay
+- [x] Synchronous subtitle decoding on main thread for Emscripten (no pthreads)
+- [x] .ass subtitle rendering working in browser (tested with op56 opening)
 
 ## Video Playback
 - [x] FFmpeg-based video decoding works in browser (synchronous frame pumping replaces async threads)
@@ -27,6 +27,12 @@
 ## Input
 - [x] Test keyboard and mouse input through SDL2 events
 - [ ] Consider touch input support for mobile browsers
+
+## Asset Optimisation
+- [ ] Auto-convert videos to WebM (VP9) during Docker build to drastically reduce file sizes (op4.mp4 is 157MB)
+- [ ] Convert images to WebP for smaller textures/backgrounds/sprites
+- [ ] Convert BGM and audio to Opus for smaller and better quality audio at lower bitrates
+- [ ] Build a pre-processing pipeline (script or Dockerfile stage) that handles all conversions automatically
 
 ## Performance
 - [ ] Profile WASM execution and rendering performance

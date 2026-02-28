@@ -14,7 +14,7 @@ docker compose up --build
 
 This will:
 1. Clone the [patched ONScripter-RU engine](https://github.com/VictoriqueMoe/onscripter-ru)
-2. Build SDL2_gpu and FFmpeg 3.3.9 from source with Emscripten
+2. Build SDL2_gpu, FFmpeg 3.3.9, libass, HarfBuzz, and FriBidi from source with Emscripten
 3. Compile the engine to WebAssembly
 4. Serve the result with nginx on port 8080
 
@@ -52,7 +52,6 @@ umineko web/
 │   ├── platform/
 │   │   └── web_stubs.cpp   # Stub implementations for smpeg2, libusb, etc.
 │   └── stubs/
-│       ├── ass/ass.h       # libass stub header
 │       └── smpeg2/smpeg.h  # smpeg2 stub header
 └── web/
     └── index.html          # HTML shell with canvas, manifest loader, IDBFS setup
@@ -73,7 +72,7 @@ What works:
 - Audio playback (BGM, sound effects, voice via SDL2_mixer and Web Audio API)
 - Video playback (cutscenes via FFmpeg synchronous decoding in WASM)
 - MPEG-2 overlay videos (.m2v) with alpha mask compositing
+- .ass subtitle rendering on video cutscenes (libass + HarfBuzz + FriBidi compiled to WASM)
 
 What doesn't work yet:
-- Video subtitles (libass is stubbed; subtitle streams are skipped)
 - Touch input for mobile browsers
