@@ -55,8 +55,8 @@ That's it. The entire toolchain (Emscripten SDK, cross-compiled libraries, nginx
 ### Quick Start
 
 ```bash
-git clone https://github.com/VictoriqueMoe/umineko-web.git
-cd umineko-web
+git clone https://github.com/VictoriqueMoe/umineko_web_asm.git
+cd umineko_web_asm
 ```
 
 Place your Umineko game files in the `game/` directory, then:
