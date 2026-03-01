@@ -26,7 +26,7 @@
 
 ## Input
 - [x] Test keyboard and mouse input through SDL2 events
-- [ ] Consider touch input support for mobile browsers
+- [x] Touch input support for mobile browsers (normalized coords, on-screen fullscreen/menu buttons)
 
 ## Asset Optimisation
 - [x] Auto-convert videos to WebM (VP9) at container startup to reduce file sizes
