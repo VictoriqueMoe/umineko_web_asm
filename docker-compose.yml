@@ -6,3 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./game:/usr/share/nginx/html/game:ro
+      - asset-cache:/usr/share/nginx/html/cache
+
+volumes:
+  asset-cache:

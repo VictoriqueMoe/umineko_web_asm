@@ -1,6 +1,6 @@
 # Umineko Web
 
-ONScripter-RU compiled to WebAssembly via Emscripten. Runs [Umineko no Naku Koro ni](https://store.steampowered.com/app/2511020/Umineko_When_They_Cry/) (PS3/Umineko Project build) entirely in the browser - no plugins, no downloads, no native binaries.
+ONScripter-RU compiled to WebAssembly via Emscripten. Runs [Umineko no Naku Koro ni](https://store.steampowered.com/app/406550/Umineko_When_They_Cry__Question_Arcs/) (PS3/Umineko Project build) entirely in the browser - no plugins, no downloads, no native binaries.
 
 ## Table of Contents
 
@@ -21,6 +21,7 @@ ONScripter-RU compiled to WebAssembly via Emscripten. Runs [Umineko no Naku Koro
   - [Persistent Save System](#persistent-save-system)
   - [Graphics Pipeline](#graphics-pipeline)
   - [Audio Pipeline](#audio-pipeline)
+  - [Asset Optimisation](#asset-optimisation)
 - [Native Library Build Chain](#native-library-build-chain)
 - [Engine Modifications](#engine-modifications)
 
@@ -35,6 +36,7 @@ The game is fully playable in the browser. All core functionality works:
 - **Video Cutscenes** - H.264/MPEG-2 video playback via FFmpeg decoded synchronously in WASM
 - **Alpha-Masked Video** - MPEG-2 overlay videos (.m2v) with per-pixel alpha mask compositing for animated effects
 - **Subtitled Cutscenes** - .ass subtitle rendering on video cutscenes via libass, HarfBuzz, and FriBidi compiled to WASM
+- **Asset Optimisation** - automatic PNG-to-WebP and MP4-to-WebM/VP9 conversion at container startup with transparent fallback
 - **Audio** - BGM, sound effects, and voice lines via SDL2_mixer and the Web Audio API (OGG/Vorbis)
 - **Save/Load System** - game saves and settings persist across browser sessions via IndexedDB
 - **Settings Menu** - interactive settings with clickable buttons, sliders, and configuration
@@ -71,8 +73,8 @@ The engine expects game files at `game/` in the project root (mounted into the c
 
 ```
 game/
-├── en.file              # Compiled game script
-├── chiru.file           # Episode 5-8 script
+├── en.file              # Compiled game script (episodes 1-8)
+├── chiru.file           # Image coordinate mappings for sprite/background positioning
 ├── default.cfg          # Engine configuration
 ├── game.hash            # Asset integrity hash
 ├── fonts/               # TrueType/OpenType fonts (default.ttf required)
@@ -119,13 +121,14 @@ docker compose build --no-cache
 ```
 umineko-web/
 ├── CMakeLists.txt              # Emscripten build config (links 60+ source files, 9 static libraries)
-├── Dockerfile                  # Multi-stage build: emscripten/emsdk:3.1.51 → nginx:alpine
+├── Dockerfile                  # Multi-stage build: emscripten/emsdk:5.0.2 → nginx:alpine
 ├── docker-compose.yml          # Container orchestration with game asset volume mount
 ├── nginx.conf                  # Serves WASM with correct MIME types, gzip, caching
 ├── build.sh                    # Build helper with cache-bust support
 ├── scripts/
-│   ├── entrypoint.sh           # Generates asset manifest, starts nginx
-│   └── generate-manifest.sh    # Walks game directory → manifest.json
+│   ├── entrypoint.sh           # Generates manifest, launches asset conversion, starts nginx
+│   ├── generate-manifest.sh    # Walks game directory → manifest.json
+│   └── convert-assets.sh       # Background PNG→WebP / MP4→WebM conversion with caching
 ├── src/
 │   ├── Resources.cpp           # Embedded GLSL shaders (auto-generated from engine)
 │   ├── platform/
@@ -173,7 +176,7 @@ The engine source (~60 C++ files) comes from the [forked ONScripter-RU repo](htt
 
 ONScripter-RU is a C++14 visual novel engine originally built for Windows, macOS, Linux, iOS, and Android. It was never designed for the browser. The engine depends on threading, synchronous file I/O, GPU rendering, and a dozen native libraries.
 
-The compilation uses [Emscripten](https://emscripten.org/) (SDK 3.1.51) which provides:
+The compilation uses [Emscripten](https://emscripten.org/) (SDK 5.0.2) which provides:
 
 - **emcc/em++** - drop-in replacements for gcc/g++ that emit WASM instead of native code
 - **Emscripten ports** - pre-built browser-compatible versions of SDL2, SDL2_image, SDL2_mixer, FreeType, zlib, libpng, libjpeg, libogg, and libvorbis
@@ -274,7 +277,7 @@ Cutscene songs display timed .ass subtitles (e.g., Italian lyrics + English tran
 | **FriBidi** | 1.0.5 | Unicode bidirectional text algorithm |
 | **FreeType** | (Emscripten port) | Font rasterisation |
 
-Building HarfBuzz 2.5.2 for Emscripten required disabling its internal `#pragma GCC diagnostic error` directives (via `-DHB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR`) because Clang 18 in Emscripten 3.1.51 introduced warnings that the old pragmas would promote to hard errors.
+Building HarfBuzz 2.5.2 for Emscripten required disabling its internal `#pragma GCC diagnostic error` directives (via `-DHB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR`) because newer Clang versions introduced warnings that the old pragmas would promote to hard errors.
 
 The native engine renders subtitles on a background thread. On Emscripten, subtitle frames are blended directly onto video frames during the synchronous decode pass, before they enter the frame queue.
 
@@ -307,19 +310,48 @@ Audio flows through SDL2_mixer → Emscripten's SDL2 audio backend → the Web A
 - **Voice lines** - character voice audio played synchronously with text display
 - **Output** - 48kHz 32-bit float stereo via `ScriptProcessorNode` (Web Audio)
 
+### Asset Optimisation
+
+The game ships with ~12GB of unoptimised assets (5.6GB PNG images, 2.2GB MP4 video, 4.1GB OGG audio). To reduce bandwidth, the container automatically converts images and video to modern formats at startup:
+
+```
+Container startup:
+  1. entrypoint.sh generates manifest.json
+  2. convert-assets.sh launches in background
+  3. nginx starts serving immediately (game is playable right away)
+
+Background conversion (convert-assets.sh):
+  PNG → WebP (cwebp, quality 90, 8 parallel workers)
+  MP4 → WebM/VP9 (ffmpeg, CRF 30, 4 parallel workers)
+  OGG → OGG (re-encoded at lower bitrate for files >1MB)
+  Results cached in /cache/game/ (Docker named volume)
+
+Serving:
+  nginx try_files → /cache/game/foo.webp first, falls back to /game/foo.png
+
+JS fetch layer (FileIO.cpp):
+  Rewrites .png → .webp, .mp4 → .webm in the fetch URL
+  If optimised version 404s (not converted yet), falls back to original
+  Engine always sees original filenames in the VFS
+```
+
+Converted files are stored in a Docker named volume (`asset-cache`), so conversion only runs once. The original game files on disk are never modified (mounted read-only).
+
+Large OGG/Vorbis audio files (>1MB, mainly BGM tracks encoded at 256kbps) are re-encoded at a lower bitrate to reduce transfer sizes while keeping the same OGG format for SDL2_mixer compatibility. Small files like voice lines and sound effects are left untouched.
+
 ## Native Library Build Chain
 
-The Dockerfile builds 6 native libraries from source for Emscripten, plus uses 10 Emscripten ports:
+The Dockerfile builds 7 native libraries from source for Emscripten, plus uses 10 Emscripten ports:
 
 ```
 Cross-compiled from source          Emscripten ports (pre-built)
 ─────────────────────────            ─────────────────────────────
 SDL2_gpu ──────────────────────────► SDL2
-FFmpeg 3.3.9 ──────────────────────► SDL2_image (PNG, JPG)
-FriBidi 1.0.5 ─────┐               SDL2_mixer
-HarfBuzz 2.5.2 ────┤               FreeType
-libass 0.14.0 ◄────┘               zlib, libpng, libjpeg
-                                    libogg, libvorbis
+FFmpeg 3.3.9 ──────────────────────► SDL2_image (PNG, JPG, WebP)
+libwebp 1.6.0 ────────────────────► SDL2_mixer
+FriBidi 1.0.5 ─────┐               FreeType
+HarfBuzz 2.5.2 ────┤               zlib, libpng, libjpeg
+libass 0.14.0 ◄────┘               libogg, libvorbis
                                     bzip2
 ```
 
@@ -331,7 +363,7 @@ The [forked ONScripter-RU engine](https://github.com/VictoriqueMoe/onscripter-ru
 
 | File | Change |
 |---|---|
-| `Support/FileIO.cpp` | Async HTTP fetch via `EM_ASYNC_JS` when opening lazy-loaded files |
+| `Support/FileIO.cpp` | Async HTTP fetch via `EM_ASYNC_JS` with .png/.mp4 to .webp/.webm rewrite and fallback |
 | `Engine/Media/Controller.cpp` | `pumpSynchronous()` - single-threaded video decode replacing threaded pipeline |
 | `Engine/Media/Controller.cpp` | Subtitle blending in synchronous decode path |
 | `Engine/Media/VideoDecoder.cpp` | Adjusted colour space conversion for browser rendering |

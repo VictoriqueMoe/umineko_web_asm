@@ -95,6 +95,28 @@ RUN cd deps && \
     emmake make -j$(nproc) && \
     emmake make install
 
+RUN cd deps && \
+    curl -sL https://github.com/webmproject/libwebp/archive/refs/tags/v1.6.0.tar.gz | tar xz && \
+    cd libwebp-1.6.0 && \
+    mkdir build-wasm && cd build-wasm && \
+    emcmake cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/build/umineko-web/deps/libwebp-install \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DWEBP_BUILD_CWEBP=OFF \
+        -DWEBP_BUILD_DWEBP=OFF \
+        -DWEBP_BUILD_GIF2WEBP=OFF \
+        -DWEBP_BUILD_IMG2WEBP=OFF \
+        -DWEBP_BUILD_VWEBP=OFF \
+        -DWEBP_BUILD_WEBPINFO=OFF \
+        -DWEBP_BUILD_WEBPMUX=OFF \
+        -DWEBP_BUILD_EXTRAS=OFF \
+        -DWEBP_BUILD_ANIM_UTILS=OFF && \
+    emmake make -j$(nproc) && \
+    emmake make install && \
+    cp -r /build/umineko-web/deps/libwebp-install/include/webp $(em-config CACHE)/sysroot/include/ && \
+    cp /build/umineko-web/deps/libwebp-install/lib/*.a $(em-config CACHE)/sysroot/lib/wasm32-emscripten/
+
 ARG ONS_CACHE_BUST=0
 RUN git clone https://github.com/VictoriqueMoe/onscripter-ru.git /build/onscripter-ru
 
@@ -113,14 +135,21 @@ RUN mkdir -p build && cd build && \
     emmake make -j$(nproc)
 
 FROM nginx:alpine
+RUN apk add --no-cache ffmpeg libwebp-tools
 COPY --from=0 /build/umineko-web/build/umineko-web.html /usr/share/nginx/html/index.html
 COPY --from=0 /build/umineko-web/build/umineko-web.js /usr/share/nginx/html/umineko-web.js
 COPY --from=0 /build/umineko-web/build/umineko-web.wasm /usr/share/nginx/html/umineko-web.wasm
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY scripts/generate-manifest.sh /usr/local/bin/generate-manifest.sh
+COPY scripts/convert-assets.sh /usr/local/bin/convert-assets.sh
+COPY scripts/convert-one-image.sh /usr/local/bin/convert-one-image.sh
+COPY scripts/convert-one-video.sh /usr/local/bin/convert-one-video.sh
+COPY scripts/convert-one-audio.sh /usr/local/bin/convert-one-audio.sh
 COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh /usr/local/bin/generate-manifest.sh \
-    && chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/generate-manifest.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh /usr/local/bin/generate-manifest.sh /usr/local/bin/convert-assets.sh \
+    /usr/local/bin/convert-one-image.sh /usr/local/bin/convert-one-video.sh /usr/local/bin/convert-one-audio.sh \
+    && chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/generate-manifest.sh /usr/local/bin/convert-assets.sh \
+    /usr/local/bin/convert-one-image.sh /usr/local/bin/convert-one-video.sh /usr/local/bin/convert-one-audio.sh
 
 EXPOSE 80
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

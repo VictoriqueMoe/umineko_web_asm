@@ -10,6 +10,7 @@ set(FFMPEG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/ffmpeg-install")
 set(LIBASS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/libass-install")
 set(HARFBUZZ_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/harfbuzz-install")
 set(FRIBIDI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/fribidi-install")
+set(LIBWEBP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/libwebp-install")
 
 set(ENGINE_SOURCES
     ${ONS_SRC_DIR}/Engine/Components/Async.cpp
@@ -120,6 +121,11 @@ endif()
 if(EXISTS "${FRIBIDI_DIR}/lib/libfribidi.a")
     list(APPEND STATIC_LIBS "${FRIBIDI_DIR}/lib/libfribidi.a")
 endif()
+foreach(webplib webp webpdemux webpdecoder)
+    if(EXISTS "${LIBWEBP_DIR}/lib/lib${webplib}.a")
+        list(APPEND STATIC_LIBS "${LIBWEBP_DIR}/lib/lib${webplib}.a")
+    endif()
+endforeach()
 
 target_link_libraries(umineko-web PRIVATE ${STATIC_LIBS})
 
@@ -128,7 +134,7 @@ if(EMSCRIPTEN)
     set(EM_PORTS
         -sUSE_SDL=2
         -sUSE_SDL_IMAGE=2
-        -sSDL2_IMAGE_FORMATS=["png","jpg"]
+        -sSDL2_IMAGE_FORMATS=["png","jpg","webp"]
         -sUSE_SDL_MIXER=2
         -sUSE_FREETYPE=1
         -sUSE_ZLIB=1
