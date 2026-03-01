@@ -7,7 +7,7 @@ if [ -f "$dst" ] && [ "$dst" -nt "$src" ]; then
 fi
 tmp="$dst.tmp"
 mkdir -p "$(dirname "$dst")"
-if ffmpeg -y -i "$src" -c:a libvorbis -q:a "$OGG_QUALITY" "$tmp" > /dev/null 2>&1; then
+if ffmpeg -y -i "$src" -c:a libvorbis -q:a "$OGG_QUALITY" -f ogg "$tmp" > /dev/null 2>&1; then
     src_size=$(wc -c < "$src")
     dst_size=$(wc -c < "$tmp")
     if [ "$dst_size" -ge "$src_size" ]; then
