@@ -36,7 +36,7 @@ The game is fully playable in the browser. All core functionality works:
 - **Video Cutscenes** - H.264/MPEG-2 video playback via FFmpeg decoded synchronously in WASM
 - **Alpha-Masked Video** - MPEG-2 overlay videos (.m2v) with per-pixel alpha mask compositing for animated effects
 - **Subtitled Cutscenes** - .ass subtitle rendering on video cutscenes via libass, HarfBuzz, and FriBidi compiled to WASM
-- **Asset Optimisation** - automatic PNG-to-WebP and MP4-to-WebM/VP9 conversion at container startup with transparent fallback
+- **Asset Optimisation** - automatic PNG→WebP, MP4→WebM/VP9, and OGG re-encoding at container startup (~60% size reduction with transparent fallback)
 - **Audio** - BGM, sound effects, and voice lines via SDL2_mixer and the Web Audio API (OGG/Vorbis)
 - **Save/Load System** - game saves and settings persist across browser sessions via IndexedDB
 - **Settings Menu** - interactive settings with clickable buttons, sliders, and configuration
@@ -128,7 +128,10 @@ umineko-web/
 ├── scripts/
 │   ├── entrypoint.sh           # Generates manifest, launches asset conversion, starts nginx
 │   ├── generate-manifest.sh    # Walks game directory → manifest.json
-│   └── convert-assets.sh       # Background PNG→WebP / MP4→WebM conversion with caching
+│   ├── convert-assets.sh       # Orchestrates background asset conversion with progress logging
+│   ├── convert-one-image.sh    # Worker: PNG → WebP (cwebp, atomic write)
+│   ├── convert-one-video.sh    # Worker: MP4 → WebM/VP9 (ffmpeg, error logging)
+│   └── convert-one-audio.sh    # Worker: OGG re-encode at lower bitrate (skips if larger)
 ├── src/
 │   ├── Resources.cpp           # Embedded GLSL shaders (auto-generated from engine)
 │   ├── platform/
@@ -312,7 +315,15 @@ Audio flows through SDL2_mixer → Emscripten's SDL2 audio backend → the Web A
 
 ### Asset Optimisation
 
-The game ships with ~12GB of unoptimised assets (5.6GB PNG images, 2.2GB MP4 video, 4.1GB OGG audio). To reduce bandwidth, the container automatically converts images and video to modern formats at startup:
+The game ships with ~12GB of unoptimised assets (5.6GB PNG images, 2.2GB MP4 video, 4.1GB OGG audio). The container automatically converts assets to modern formats at startup, reducing total served size to ~5GB (~60% reduction):
+
+| Asset type | Original | Format | Optimised | Format | Reduction |
+|---|---|---|---|---|---|
+| Images (9,450 files) | 5.6 GB | PNG | ~2.8 GB | WebP (q90) | ~50% |
+| Video (74 files) | 2.2 GB | MP4/H.264 | ~0.8 GB | WebM/VP9 (CRF 30) | ~64% |
+| Audio BGM (218 files >1MB) | 2.0 GB | OGG 256kbps | ~0.7 GB | OGG ~128kbps (q4) | ~67% |
+| Voice/SFX (92k files <1MB) | 2.1 GB | OGG | 2.1 GB | unchanged | 0% |
+| **Total** | **~12 GB** | | **~6.4 GB** | | **~47%** |
 
 ```
 Container startup:
@@ -322,8 +333,8 @@ Container startup:
 
 Background conversion (convert-assets.sh):
   PNG → WebP (cwebp, quality 90, 8 parallel workers)
-  MP4 → WebM/VP9 (ffmpeg, CRF 30, 4 parallel workers)
-  OGG → OGG (re-encoded at lower bitrate for files >1MB)
+  MP4 → WebM/VP9 (ffmpeg, CRF 30, Opus audio 128k, 4 parallel workers)
+  OGG → OGG (re-encoded at ~128kbps for files >1MB, skipped if larger than original)
   Results cached in /cache/game/ (Docker named volume)
 
 Serving:
@@ -337,7 +348,7 @@ JS fetch layer (FileIO.cpp):
 
 Converted files are stored in a Docker named volume (`asset-cache`), so conversion only runs once. The original game files on disk are never modified (mounted read-only).
 
-Large OGG/Vorbis audio files (>1MB, mainly BGM tracks encoded at 256kbps) are re-encoded at a lower bitrate to reduce transfer sizes while keeping the same OGG format for SDL2_mixer compatibility. Small files like voice lines and sound effects are left untouched.
+Large OGG/Vorbis audio files (>1MB, mainly BGM tracks encoded at 256kbps) are re-encoded at a lower bitrate (~128kbps, Vorbis quality 4) to reduce transfer sizes while keeping the same OGG format for SDL2_mixer compatibility. If re-encoding produces a larger file than the original, the file is skipped. Small files like voice lines and sound effects are left untouched.
 
 ## Native Library Build Chain
 
