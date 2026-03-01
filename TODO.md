@@ -2,7 +2,7 @@
 
 ## Asset Loading
 - [x] Lazy-load backgrounds, sprites, sound, and video over HTTP on demand instead of preloading everything
-- [x] Load archive files (arc.nsa, etc.) — manifest.json + 0-byte stubs + EM_ASYNC_JS fetch on first read
+- [x] Load archive files (arc.nsa, etc.) -- manifest.json + 0-byte stubs + EM_ASYNC_JS fetch on first read
 - [ ] Add loading/progress indicator when assets are being fetched during gameplay
 
 ## Save System
@@ -29,16 +29,19 @@
 - [ ] Consider touch input support for mobile browsers
 
 ## Asset Optimisation
-- [ ] Auto-convert videos to WebM (VP9) during Docker build to drastically reduce file sizes (op4.mp4 is 157MB)
-- [ ] Convert images to WebP for smaller textures/backgrounds/sprites
-- [ ] Convert BGM and audio to Opus for smaller and better quality audio at lower bitrates
-- [ ] Build a pre-processing pipeline (script or Dockerfile stage) that handles all conversions automatically
+- [x] Auto-convert videos to WebM (VP9) at container startup to reduce file sizes
+- [x] Convert images to WebP for smaller textures/backgrounds/sprites
+- [x] Build a background conversion pipeline (convert-assets.sh) with caching
+- [x] Transparent fetch rewrite in JS layer (.png -> .webp, .mp4 -> .webm) with fallback
+- [x] nginx try_files serves optimised assets when available, falls back to originals
+- [x] Re-encode large OGG audio (>1MB) at lower bitrate to reduce BGM file sizes
 
 ## Performance
 - [ ] Profile WASM execution and rendering performance
 - [ ] Consider building with -O3 or -Oz for smaller/faster output
-- [ ] Remove `-g` debug flag once stable (currently enabled for stack traces)
-- [ ] Investigate SharedArrayBuffer + pthreads for multithreading (requires COOP/COEP headers from caddy)
+- [x] Remove `-g` debug flag and disable assertions
+- [x] Upgrade Emscripten from 3.1.51 to 5.0.2
+- [ ] Investigate SharedArrayBuffer + pthreads for multithreading (requires COOP/COEP headers)
 
 ## Docker / Build
 - [ ] Pin the onscripter-ru commit hash in the Dockerfile so builds are reproducible
