@@ -107,7 +107,9 @@ ask_game_path() {
 
     game_path="${game_path/#\~/$HOME}"
 
-    if [[ ! "$game_path" = /* ]]; then
+    if [[ "$game_path" =~ ^[A-Za-z]:[/\\] ]] && command -v wslpath &>/dev/null; then
+        game_path="$(wslpath -u "$game_path")"
+    elif [[ ! "$game_path" = /* ]]; then
         game_path="$(cd "$(dirname "$game_path")" 2>/dev/null && pwd)/$(basename "$game_path")"
     fi
 
