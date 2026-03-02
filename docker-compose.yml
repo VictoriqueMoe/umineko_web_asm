@@ -2,11 +2,13 @@ services:
   umineko-web:
     build: .
     ports:
-      - "8080:80"
+      - "${PORT:-8080}:80"
     restart: unless-stopped
     volumes:
-      - ./game:/usr/share/nginx/html/game:ro
+      - ${GAME_PATH:-./game}:/usr/share/nginx/html/game:ro
       - asset-cache:/usr/share/nginx/html/cache
+    environment:
+      - HOSTING_MODE=${HOSTING_MODE:-production}
 
 volumes:
   asset-cache:

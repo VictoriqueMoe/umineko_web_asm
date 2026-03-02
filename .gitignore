@@ -7,4 +7,4 @@ deps/
 *.iml
 .idea
 game
-docker-compose.override.yml
+.env

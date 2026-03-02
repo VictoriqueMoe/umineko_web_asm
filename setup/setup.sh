@@ -6,6 +6,7 @@ cd "$PROJECT_ROOT"
 
 DEFAULT_GAME_PATH="./game"
 DEFAULT_PORT="8080"
+HOST="localhost"
 
 print_banner() {
     echo ""
@@ -33,7 +34,7 @@ check_docker() {
 }
 
 check_existing() {
-    if [ -f "docker-compose.override.yml" ]; then
+    if [ -f ".env" ]; then
         echo "Existing installation detected."
         echo ""
         echo "  1) Update    - Pull latest changes and rebuild"
@@ -57,7 +58,11 @@ check_existing() {
 do_update() {
     echo ""
     echo "Pulling latest changes..."
-    git pull
+    if command -v git &>/dev/null; then
+        git pull
+    else
+        echo "Warning: Could not pull changes, consider installing git and cloning the repository with it."
+    fi
     echo ""
     docker compose down 2>/dev/null || true
     echo "Rebuilding..."
@@ -66,23 +71,24 @@ do_update() {
     docker compose up -d
 
     local port
-    port=$(grep -oP '"\K[0-9]+(?=:80")' docker-compose.override.yml 2>/dev/null || echo "8080")
+    port=$(grep -oP '^PORT=\K[0-9]+' .env 2>/dev/null || echo "$DEFAULT_PORT")
 
     echo ""
     echo "=========================================="
     echo "  Umineko Web updated!"
     echo "=========================================="
     echo ""
-    echo "  URL: http://localhost:${port}"
+    echo "  URL: http://${HOST}:${port}"
     echo ""
 }
 
 ask_hosting_mode() {
     echo "How do you want to run Umineko Web?"
     echo ""
-    echo "  1) Local      - Serves original game files directly (fast startup)"
+    echo "  1) Local      - Serves original game files directly."
     echo "  2) Production - Converts assets for smaller file sizes (PNG->WebP,"
-    echo "                  MP4->WebM, OGG re-encoding). Takes a while on first run."
+    echo "                  MP4->WebM, OGG re-encoding). Takes extra space on"
+    echo "                  the server, runs in background on first launch."
     echo ""
     while true; do
         read -rp "Choose [1/2] (default: 1): " mode_choice
@@ -149,19 +155,13 @@ ask_port() {
     echo ""
 }
 
-generate_override() {
-    cat > docker-compose.override.yml <<YAML
-services:
-  umineko-web:
-    ports:
-      - "${PORT}:80"
-    volumes:
-      - "${GAME_PATH}:/usr/share/nginx/html/game:ro"
-      - asset-cache:/usr/share/nginx/html/cache
-    environment:
-      - HOSTING_MODE=${HOSTING_MODE}
-YAML
-    echo "Generated docker-compose.override.yml"
+generate_env() {
+    cat > .env <<EOF
+PORT="${PORT}"
+GAME_PATH="${GAME_PATH}"
+HOSTING_MODE="${HOSTING_MODE}"
+EOF
+    echo "Generated .env"
 }
 
 run_docker() {
@@ -179,7 +179,7 @@ print_success() {
     echo "  Umineko Web is running!"
     echo "=========================================="
     echo ""
-    echo "  URL:  http://localhost:${PORT}"
+    echo "  URL:  http://${HOST}:${PORT}"
     echo "  Mode: ${HOSTING_MODE}"
     echo "  Game: ${GAME_PATH}"
     echo ""
@@ -190,7 +190,7 @@ print_success() {
     fi
     echo "  Stop:    docker compose down"
     echo "  Restart: docker compose up -d"
-    echo "  Re-run:  ./setup/setup.sh"
+    echo "  Re-run:  $(realpath "${0}")"
     echo ""
 }
 
@@ -200,6 +200,6 @@ check_existing
 ask_hosting_mode
 ask_game_path
 ask_port
-generate_override
+generate_env
 run_docker
 print_success
