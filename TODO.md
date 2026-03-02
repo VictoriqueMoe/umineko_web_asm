@@ -44,5 +44,6 @@
 - [ ] Investigate SharedArrayBuffer + pthreads for multithreading (requires COOP/COEP headers)
 
 ## Docker / Build
+- [x] Interactive setup scripts (setup.sh + setup.ps1) with local/production mode, custom game path, port
 - [ ] Pin the onscripter-ru commit hash in the Dockerfile so builds are reproducible
 - [ ] Add a favicon

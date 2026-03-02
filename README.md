@@ -65,19 +65,38 @@ git clone https://github.com/VictoriqueMoe/umineko_web_asm.git
 cd umineko_web_asm
 ```
 
-Place your Umineko game files in the `game/` directory, then:
+Place your Umineko game files in the `game/` directory (or specify a custom path during setup), then run the setup script:
 
+**Mac / Linux:**
 ```bash
-docker compose up --build
+./setup/setup.sh
 ```
 
-Open `http://localhost:8080` in your browser.
+**Windows (PowerShell):**
+```powershell
+.\setup\setup.ps1
+```
 
-> **Note:** On first launch, the container converts game assets (PNG → WebP, MP4 → WebM, OGG re-encoding) in the background. This can take a long time depending on your hardware. The game is playable immediately, but you won't see the full size savings until conversion finishes. Check progress with:
+The script will ask you:
+1. **Hosting mode** — Local (serves files directly, fast startup) or Production (converts PNG→WebP, MP4→WebM, OGG re-encoding for smaller file sizes)
+2. **Game files path** — Where your Umineko files are (default: `./game`)
+3. **Port** — Which port to serve on (default: `8080`)
+
+It generates a `docker-compose.override.yml`, builds the container, and starts the server.
+
+If you've already run setup before, re-running the script will offer to **update** (pull latest changes and rebuild) or **reconfigure** (change settings).
+
+> **Note:** In production mode, asset conversion runs in the background on first launch and can take a long time depending on your hardware. The game is playable immediately. Check progress with:
 >
 > ```bash
 > docker compose logs -f
 > ```
+
+**Manual setup** (without the script):
+```bash
+docker compose up --build
+```
+This uses defaults: port 8080, `./game` directory, production mode.
 
 ### Game Assets
 
@@ -137,6 +156,9 @@ umineko-web/
 ├── docker-compose.yml          # Container orchestration with game asset volume mount
 ├── nginx.conf                  # Serves WASM with correct MIME types, gzip, caching
 ├── build.sh                    # Build helper with cache-bust support
+├── setup/
+│   ├── setup.sh                # Interactive setup script (Mac/Linux)
+│   └── setup.ps1               # Interactive setup script (Windows)
 ├── scripts/
 │   ├── entrypoint.sh           # Generates manifest, launches asset conversion, starts nginx
 │   ├── generate-manifest.sh    # Walks game directory → manifest.json
