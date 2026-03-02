@@ -72,9 +72,10 @@ Place your Umineko game files in the `game/` directory (or specify a custom path
 ./setup/setup.sh
 ```
 
-**Windows (PowerShell):**
-```powershell
-.\setup\setup.ps1
+**Windows:**
+Double-click `setup\setup.bat`, or run from a terminal:
+```
+setup\setup.bat
 ```
 
 The script will ask you:
@@ -158,7 +159,7 @@ umineko-web/
 ├── build.sh                    # Build helper with cache-bust support
 ├── setup/
 │   ├── setup.sh                # Interactive setup script (Mac/Linux)
-│   └── setup.ps1               # Interactive setup script (Windows)
+│   └── setup.bat               # Windows wrapper (calls setup.sh via WSL)
 ├── scripts/
 │   ├── entrypoint.sh           # Generates manifest, launches asset conversion, starts nginx
 │   ├── generate-manifest.sh    # Walks game directory → manifest.json
