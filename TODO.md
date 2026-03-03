@@ -43,6 +43,17 @@
 - [x] Upgrade Emscripten from 3.1.51 to 5.0.2
 - [ ] Investigate SharedArrayBuffer + pthreads for multithreading (requires COOP/COEP headers)
 
+## Synchronised Reading + Chat (WebRTC)
+- [x] Signaling server for WebRTC connection setup
+- [x] Connection UI (host/join, room codes)
+- [x] WebRTC DataChannel for peer-to-peer messaging
+- [x] Text chat overlay (input field, message list, toggle)
+- [ ] Voice chat via MediaStream (optional)
+- [ ] Input mirroring: forward master inputs to slave via DataChannel
+- [ ] Suppress local input on slave side
+- [ ] Save file transfer for mid-game join
+- [ ] Connection status indicator and disconnect handling
+
 ## Docker / Build
 - [x] Interactive setup scripts (setup.sh + setup.ps1) with local/production mode, custom game path, port
 - [ ] Pin the onscripter-ru commit hash in the Dockerfile so builds are reproducible

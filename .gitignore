@@ -8,3 +8,4 @@ deps/
 .idea
 game
 .env
+node_modules/
