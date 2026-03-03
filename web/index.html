@@ -82,6 +82,19 @@
             padding: 4px;
             line-height: 1;
         }
+        #fetch-indicator {
+            display: none;
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ccc;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            z-index: 997;
+        }
         @media (pointer: coarse) {
             #touch-controls { display: flex; }
             #mobile-notice { display: block; }
@@ -93,6 +106,7 @@
         Do not change the resolution in Config — it will break the display on mobile.
         <button onclick="this.parentElement.style.display='none'" aria-label="Dismiss">&times;</button>
     </div>
+    <div id="fetch-indicator">Loading...</div>
     <div id="loading">Loading...</div>
     <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
     <div id="touch-controls">
@@ -111,6 +125,13 @@
         ];
 
         window.gameFileSet = new Set();
+
+        window.showFetchIndicator = function() {
+            document.getElementById('fetch-indicator').style.display = 'block';
+        };
+        window.hideFetchIndicator = function() {
+            document.getElementById('fetch-indicator').style.display = 'none';
+        };
 
         function shouldEagerLoad(path) {
             for (let i = 0; i < EAGER_PATTERNS.length; i++) {
