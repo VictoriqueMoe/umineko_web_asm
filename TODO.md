@@ -3,7 +3,7 @@
 ## Asset Loading
 - [x] Lazy-load backgrounds, sprites, sound, and video over HTTP on demand instead of preloading everything
 - [x] Load archive files (arc.nsa, etc.) -- manifest.json + 0-byte stubs + EM_ASYNC_JS fetch on first read
-- [ ] Add loading/progress indicator when assets are being fetched during gameplay
+- [x] Add loading/progress indicator when assets are being fetched during gameplay
 
 ## Save System
 - [x] Integrate Emscripten IDBFS for persistent save file storage in the browser
