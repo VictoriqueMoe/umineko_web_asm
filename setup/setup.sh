@@ -79,7 +79,7 @@ do_update() {
     docker compose up -d
 
     local port
-    port=$(grep -oP '^PORT=\K[0-9]+' .env 2>/dev/null || echo "$DEFAULT_PORT")
+    port=$(sed -n 's/^PORT="\{0,1\}\([0-9]*\)"\{0,1\}/\1/p' .env 2>/dev/null || echo "$DEFAULT_PORT")
 
     echo ""
     echo "=========================================="
