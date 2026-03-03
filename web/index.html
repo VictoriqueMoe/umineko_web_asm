@@ -85,15 +85,28 @@
         #fetch-indicator {
             display: none;
             position: fixed;
-            bottom: 16px;
-            left: 16px;
-            background: rgba(0, 0, 0, 0.7);
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.75);
             color: #ccc;
             font-family: monospace;
-            font-size: 12px;
-            padding: 6px 12px;
-            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+            padding: 8px 12px 6px;
             z-index: 997;
+        }
+        #fetch-bar-bg {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            margin-top: 6px;
+            border-radius: 2px;
+        }
+        #fetch-bar {
+            height: 100%;
+            background: #ccc;
+            border-radius: 2px;
+            width: 0%;
         }
         @media (pointer: coarse) {
             #touch-controls { display: flex; }
@@ -106,7 +119,10 @@
         Do not change the resolution in Config — it will break the display on mobile.
         <button onclick="this.parentElement.style.display='none'" aria-label="Dismiss">&times;</button>
     </div>
-    <div id="fetch-indicator">Loading...</div>
+    <div id="fetch-indicator">
+        <span id="fetch-text">Loading asset...</span>
+        <div id="fetch-bar-bg"><div id="fetch-bar"></div></div>
+    </div>
     <div id="loading">Loading...</div>
     <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
     <div id="touch-controls">
@@ -126,11 +142,21 @@
 
         window.gameFileSet = new Set();
 
-        window.showFetchIndicator = function() {
+        window._fetchName = 'asset';
+
+        window.showFetchIndicator = function(name) {
+            window._fetchName = name || 'asset';
+            document.getElementById('fetch-text').textContent = 'Loading ' + window._fetchName + '...';
+            document.getElementById('fetch-bar').style.width = '0%';
             document.getElementById('fetch-indicator').style.display = 'block';
         };
         window.hideFetchIndicator = function() {
             document.getElementById('fetch-indicator').style.display = 'none';
+        };
+        window.updateFetchProgress = function(received, total) {
+            var pct = Math.round((received / total) * 100);
+            document.getElementById('fetch-text').textContent = 'Loading ' + window._fetchName + '... ' + pct + '%';
+            document.getElementById('fetch-bar').style.width = pct + '%';
         };
 
         function shouldEagerLoad(path) {
@@ -292,11 +318,13 @@
                 document.getElementById('loading').classList.add('hidden');
                 const canvas = document.getElementById('canvas');
 
+                const originalAspect = canvas.width / canvas.height;
+
                 function fitCanvas() {
                     if (document.fullscreenElement) {
                         return;
                     }
-                    const aspect = canvas.width / canvas.height;
+                    const aspect = originalAspect;
                     const vpW = window.innerWidth;
                     const vpH = window.innerHeight;
                     let w, h;
