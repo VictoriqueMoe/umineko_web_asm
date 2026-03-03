@@ -134,14 +134,9 @@ ask_game_path() {
 
     GAME_PATH="$game_path"
 
-    local file_count
-    file_count=$(find "$GAME_PATH" -maxdepth 1 -type f | head -5 | wc -l)
-    if [ "$file_count" -eq 0 ]; then
-        echo "Warning: '$GAME_PATH' appears to be empty."
-        read -rp "Continue anyway? [y/N]: " confirm
-        if [ "${confirm,,}" != "y" ]; then
-            exit 1
-        fi
+    if [ ! -r "$GAME_PATH/default.cfg" ] || [ ! -r "$GAME_PATH/chiru.file" ]; then
+        echo "Error: '$GAME_PATH' does not appear to be a valid Umineko game directory."
+        exit 1
     fi
     echo ""
 }
