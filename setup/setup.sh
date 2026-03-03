@@ -58,10 +58,18 @@ check_existing() {
 do_update() {
     echo ""
     echo "Pulling latest changes..."
-    if command -v git &>/dev/null; then
-        git pull
-    else
+    if ! command -v git &>/dev/null; then
         echo "Warning: Could not pull changes, consider installing git and cloning the repository with it."
+    elif ! git pull; then
+        echo "Warning: git pull failed (see above)."
+        read -rp "Continue anyway? [y/N]: " confirm
+        confirm="${confirm:-n}"
+        if [ "${confirm,,}" != "y" ]; then
+            echo "Aborting update."
+            exit 1
+        else
+            echo "Continuing despite git pull failure."
+        fi
     fi
     echo ""
     docker compose down 2>/dev/null || true
