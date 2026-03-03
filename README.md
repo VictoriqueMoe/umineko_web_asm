@@ -83,7 +83,7 @@ The script will ask you:
 2. **Game files path** — Where your Umineko files are (default: `./game`)
 3. **Port** — Which port to serve on (default: `8080`)
 
-It generates a `docker-compose.override.yml`, builds the container, and starts the server.
+It generates a `.env` file, builds the container, and starts the server.
 
 If you've already run setup before, re-running the script will offer to **update** (pull latest changes and rebuild) or **reconfigure** (change settings).
 
