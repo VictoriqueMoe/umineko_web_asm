@@ -155,7 +155,7 @@ umineko-web/
 ├── CMakeLists.txt              # Emscripten build config (links 60+ source files, 9 static libraries)
 ├── Dockerfile                  # Multi-stage build: emscripten/emsdk:5.0.2 → nginx:alpine
 ├── docker-compose.yml          # Container orchestration with game asset volume mount
-├── nginx.conf                  # Serves WASM with correct MIME types, gzip, caching
+├── nginx.conf                  # Serves WASM with correct MIME types, gzip, caching, .hau content negotiation
 ├── build.sh                    # Build helper with cache-bust support
 ├── setup/
 │   ├── setup.sh                # Interactive setup script (Mac/Linux)
@@ -372,12 +372,10 @@ Background conversion (convert-assets.sh):
   OGG → OGG (re-encoded at ~128kbps for files >1MB, skipped if larger than original)
   Results cached in /cache/game/ (Docker named volume)
 
-Serving:
-  nginx try_files → /cache/game/foo.webp first, falls back to /game/foo.png
-
-JS fetch layer (FileIO.cpp):
-  Rewrites .png → .webp, .mp4 → .webm in the fetch URL
-  If optimised version 404s (not converted yet), falls back to original
+Serving (content negotiation via .hau):
+  Client rewrites .png/.mp4 → .hau in the fetch URL
+  nginx try_files resolves .hau → .webp/.webm (cached) or .png/.mp4 (original)
+  Single request per asset, no 404 fallback needed
   Engine always sees original filenames in the VFS
 ```
 
@@ -409,7 +407,7 @@ The [forked ONScripter-RU engine](https://github.com/VictoriqueMoe/onscripter-ru
 
 | File                            | Change                                                                                |
 |---------------------------------|---------------------------------------------------------------------------------------|
-| `Support/FileIO.cpp`            | Async HTTP fetch via `EM_ASYNC_JS` with .png/.mp4 to .webp/.webm rewrite and fallback |
+| `Support/FileIO.cpp`            | Async HTTP fetch via `EM_ASYNC_JS` with .hau content negotiation for optimised assets |
 | `Engine/Media/Controller.cpp`   | `pumpSynchronous()` - single-threaded video decode replacing threaded pipeline        |
 | `Engine/Media/Controller.cpp`   | Subtitle blending in synchronous decode path                                          |
 | `Engine/Media/VideoDecoder.cpp` | Adjusted colour space conversion for browser rendering                                |
