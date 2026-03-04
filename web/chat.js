@@ -1,5 +1,4 @@
 (() => {
-
     const STUN_SERVERS = [
         {urls: 'stun:stun.l.google.com:19302'},
         {urls: 'stun:stun1.l.google.com:19302'}
@@ -12,7 +11,7 @@
     let localName = '';
     let peerName = '';
 
-    const $ = (id) => document.getElementById(id);
+    const $ = document.getElementById.bind(document);
 
     const sendSignaling = (msg) => {
         if (ws?.readyState === WebSocket.OPEN) {
@@ -209,7 +208,6 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const panel = $('chat-panel');
-        const nameInput = $('chat-name-input');
         const codeInput = $('chat-code-input');
         const chatInput = $('chat-input');
 
@@ -242,7 +240,4 @@
             });
         }
     });
-
-    window.UminekoChat = {host: hostRoom, join: joinRoom, send: sendChatMessage, disconnect: handleDisconnect};
-
 })();
