@@ -54,6 +54,9 @@
         $('chat-connect').style.display = 'none';
         $('chat-waiting').style.display = 'none';
         $('chat-messages-view').style.display = 'flex';
+        const roleEl = $('chat-role');
+        roleEl.textContent = role === 'host' ? 'Host' : 'Watching';
+        roleEl.classList.remove('chat-role-hidden');
     };
 
     const showConnectUI = () => {
@@ -61,12 +64,18 @@
         $('chat-waiting').style.display = 'none';
         $('chat-connect').style.display = 'block';
         $('chat-messages').innerHTML = '';
+        $('chat-role').classList.add('chat-role-hidden');
         updateStatus('');
     };
 
     const setupDataChannel = (channel) => {
         channel.onopen = () => {
             channel.send(JSON.stringify({type: 'name', name: localName}));
+            if (role === 'host') {
+                startHostCapture();
+            } else if (role === 'guest') {
+                startGuestBlock();
+            }
         };
         channel.onmessage = (e) => {
             const msg = JSON.parse(e.data);
@@ -75,12 +84,20 @@
                 displaySystemMessage(`${peerName} joined.`);
             } else if (msg.type === 'chat') {
                 displayMessage(peerName || 'Peer', msg.text);
+            } else if (msg.type === 'input' && role === 'guest') {
+                if (msg.action === 'fullscreen') {
+                    Module.ccall('ons_toggle_fullscreen');
+                } else {
+                    window.sendMouseEvent(msg.eventType, msg.nx, msg.ny, msg.button);
+                }
             }
         };
         channel.onclose = () => handleDisconnect();
     };
 
     const handleDisconnect = () => {
+        stopHostCapture();
+        stopGuestBlock();
         pc?.close();
         pc = null;
         dataChannel = null;
@@ -194,6 +211,120 @@
             dataChannel.send(JSON.stringify({type: 'chat', text}));
             displayMessage('You', text);
         }
+    };
+
+    const sendInput = (eventType, nx, ny, button) => {
+        if (dataChannel?.readyState === 'open' && role === 'host') {
+            dataChannel.send(JSON.stringify({type: 'input', eventType, nx, ny, button}));
+        }
+    };
+
+    const sendInputAction = (action) => {
+        if (dataChannel?.readyState === 'open' && role === 'host') {
+            dataChannel.send(JSON.stringify({type: 'input', action}));
+        }
+    };
+
+    let hostListeners = [];
+    let guestBlocker = null;
+
+    const startHostCapture = () => {
+        const canvas = $('canvas');
+
+        const onMouseDown = (e) => {
+            const [nx, ny] = window.toNormalizedCoords(e.clientX, e.clientY);
+            const button = e.button === 2 ? 2 : 0;
+            sendInput(0, nx, ny, button);
+        };
+        const onMouseUp = (e) => {
+            const [nx, ny] = window.toNormalizedCoords(e.clientX, e.clientY);
+            const button = e.button === 2 ? 2 : 0;
+            sendInput(1, nx, ny, button);
+        };
+        const onMouseMove = (e) => {
+            const [nx, ny] = window.toNormalizedCoords(e.clientX, e.clientY);
+            sendInput(2, nx, ny, 0);
+        };
+
+        const onTouchStart = (e) => {
+            if (e.touches.length === 1) {
+                const [nx, ny] = window.toNormalizedCoords(e.touches[0].clientX, e.touches[0].clientY);
+                sendInput(2, nx, ny, 0);
+                sendInput(0, nx, ny, 0);
+            }
+        };
+        const onTouchEnd = (e) => {
+            if (e.changedTouches.length === 1) {
+                const [nx, ny] = window.toNormalizedCoords(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                sendInput(1, nx, ny, 0);
+            }
+        };
+        const onTouchMove = (e) => {
+            if (e.touches.length === 1) {
+                const [nx, ny] = window.toNormalizedCoords(e.touches[0].clientX, e.touches[0].clientY);
+                sendInput(2, nx, ny, 0);
+            }
+        };
+
+        canvas.addEventListener('mousedown', onMouseDown);
+        canvas.addEventListener('mouseup', onMouseUp);
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('touchstart', onTouchStart);
+        canvas.addEventListener('touchend', onTouchEnd);
+        canvas.addEventListener('touchmove', onTouchMove);
+
+        hostListeners = [
+            ['mousedown', onMouseDown],
+            ['mouseup', onMouseUp],
+            ['mousemove', onMouseMove],
+            ['touchstart', onTouchStart],
+            ['touchend', onTouchEnd],
+            ['touchmove', onTouchMove],
+        ];
+
+        const fsBtn = $('btn-fullscreen');
+        const menuBtn = $('btn-menu');
+        const onFullscreen = () => sendInputAction('fullscreen');
+        const onMenu = () => {
+            sendInput(0, 0.5, 0.5, 2);
+            sendInput(1, 0.5, 0.5, 2);
+        };
+        fsBtn.addEventListener('click', onFullscreen);
+        menuBtn.addEventListener('click', onMenu);
+        hostListeners.push(
+            ['click', onFullscreen, fsBtn],
+            ['click', onMenu, menuBtn],
+        );
+    };
+
+    const stopHostCapture = () => {
+        const canvas = $('canvas');
+        for (const [evt, fn, target] of hostListeners) {
+            (target || canvas).removeEventListener(evt, fn);
+        }
+        hostListeners = [];
+    };
+
+    const startGuestBlock = () => {
+        const canvas = $('canvas');
+        guestBlocker = (e) => {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+        };
+        for (const evt of ['mousedown', 'mouseup', 'mousemove', 'touchstart', 'touchend', 'touchmove']) {
+            canvas.addEventListener(evt, guestBlocker, {capture: true});
+        }
+    };
+
+    const stopGuestBlock = () => {
+        if (!guestBlocker) {
+            return;
+        }
+        const canvas = $('canvas');
+        for (const evt of ['mousedown', 'mouseup', 'mousemove', 'touchstart', 'touchend', 'touchmove']) {
+            canvas.removeEventListener(evt, guestBlocker, {capture: true});
+        }
+        guestBlocker = null;
     };
 
     const interceptKey = (e) => {

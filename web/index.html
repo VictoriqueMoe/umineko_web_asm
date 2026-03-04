@@ -129,6 +129,23 @@
         #chat-toggle:hover {
             background: rgba(255, 255, 255, 0.3);
         }
+        #chat-role {
+            position: fixed;
+            bottom: 68px;
+            left: 16px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ccc;
+            font-family: sans-serif;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 48px;
+        }
+        #chat-role.chat-role-hidden {
+            display: none;
+        }
         #chat-panel {
             position: fixed;
             bottom: 72px;
@@ -295,6 +312,7 @@
     </div>
 
     <button id="chat-toggle" aria-label="Chat">&#x1F4AC;</button>
+    <div id="chat-role" class="chat-role-hidden"></div>
     <div id="chat-panel" class="chat-hidden">
         <div id="chat-connect">
             <div id="chat-connect-title">Chat</div>
@@ -549,11 +567,13 @@
                         (clientY - rect.top) / rect.height
                     ];
                 }
+                window.toNormalizedCoords = toNormalizedCoords;
 
                 function sendMouseEvent(type, x, y, button) {
                     Module.ccall('ons_mouse_event', null,
                         ['number','number','number','number'], [type, x, y, button]);
                 }
+                window.sendMouseEvent = sendMouseEvent;
 
                 canvas.addEventListener('touchstart', function(e) {
                     e.preventDefault();
