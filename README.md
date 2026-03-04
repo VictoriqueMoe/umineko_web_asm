@@ -178,7 +178,7 @@ umineko-web/
 └── game/                       # Game assets (mounted volume, not committed)
 ```
 
-The engine source (~60 C++ files) comes from the [forked ONScripter-RU repo](https://github.com/VictoriqueMoe/onscripter-ru), cloned during the Docker build.
+The engine source (~60 C++ files) comes from the [forked ONScripter-RU repo](https://github.com/VictoriqueMoe/onscripter-ru-wasm), cloned during the Docker build.
 
 ## How It Works
 
@@ -405,7 +405,7 @@ All dependencies are sourced from [umineko-project/onscripter-deps](https://gith
 
 ## Engine Modifications
 
-The [forked ONScripter-RU engine](https://github.com/VictoriqueMoe/onscripter-ru) includes Emscripten-specific changes across 18 source files, all gated behind `#ifdef __EMSCRIPTEN__`:
+The [forked ONScripter-RU engine](https://github.com/VictoriqueMoe/onscripter-ru-wasm) includes Emscripten-specific changes across 18 source files, all gated behind `#ifdef __EMSCRIPTEN__`:
 
 | File                            | Change                                                                                |
 |---------------------------------|---------------------------------------------------------------------------------------|

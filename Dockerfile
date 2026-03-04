@@ -118,7 +118,7 @@ RUN cd deps && \
     cp /build/umineko-web/deps/libwebp-install/lib/*.a $(em-config CACHE)/sysroot/lib/wasm32-emscripten/
 
 ARG ONS_CACHE_BUST=1
-RUN git clone https://github.com/VictoriqueMoe/onscripter-ru.git /build/onscripter-ru
+RUN git clone https://github.com/VictoriqueMoe/onscripter-ru-wasm.git /build/onscripter-ru
 
 RUN cc -o /build/embed /build/onscripter-ru/Tools/embed/embed.c && \
     cd /build/onscripter-ru && \
