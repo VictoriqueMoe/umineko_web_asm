@@ -73,6 +73,7 @@
             channel.send(JSON.stringify({type: 'name', name: localName}));
             if (role === 'host') {
                 startHostCapture();
+                startSyncBroadcast();
             } else if (role === 'guest') {
                 startGuestBlock();
             }
@@ -84,9 +85,21 @@
                 displaySystemMessage(`${peerName} joined.`);
             } else if (msg.type === 'chat') {
                 displayMessage(peerName || 'Peer', msg.text);
+            } else if (msg.type === 'sync' && role === 'guest') {
+                handleSyncMessage(msg.pos);
             } else if (msg.type === 'input' && role === 'guest') {
+                if (guestPaused) {
+                    return;
+                }
                 if (msg.action === 'fullscreen') {
-                    Module.ccall('ons_toggle_fullscreen');
+                    Module._ons_toggle_fullscreen();
+                } else if (msg.eventType === 'keydown' || msg.eventType === 'keyup') {
+                    const evt = new KeyboardEvent(msg.eventType, {
+                        key: msg.key, code: msg.code, keyCode: msg.keyCode,
+                        bubbles: true
+                    });
+                    trustedEvents.add(evt);
+                    window.dispatchEvent(evt);
                 } else {
                     window.sendMouseEvent(msg.eventType, msg.nx, msg.ny, msg.button);
                 }
@@ -98,6 +111,9 @@
     const handleDisconnect = () => {
         stopHostCapture();
         stopGuestBlock();
+        stopSyncBroadcast();
+        guestPaused = false;
+        hostPosition = null;
         pc?.close();
         pc = null;
         dataChannel = null;
@@ -225,8 +241,58 @@
         }
     };
 
+    const sendKeyInput = (eventType, e) => {
+        if (dataChannel?.readyState === 'open' && role === 'host') {
+            dataChannel.send(JSON.stringify({
+                type: 'input', eventType,
+                key: e.key, code: e.code, keyCode: e.keyCode
+            }));
+        }
+    };
+
     let hostListeners = [];
     let guestBlocker = null;
+    const trustedEvents = new WeakSet();
+    let syncInterval = null;
+    let hostPosition = null;
+    let guestPaused = false;
+
+    const getScriptPosition = () => {
+        if (typeof Module?._ons_get_script_position === 'function') {
+            return Module._ons_get_script_position();
+        }
+        return -1;
+    };
+
+    const startSyncBroadcast = () => {
+        syncInterval = setInterval(() => {
+            if (dataChannel?.readyState === 'open') {
+                dataChannel.send(JSON.stringify({type: 'sync', pos: getScriptPosition()}));
+            }
+        }, 500);
+    };
+
+    const stopSyncBroadcast = () => {
+        if (syncInterval) {
+            clearInterval(syncInterval);
+            syncInterval = null;
+        }
+    };
+
+    const handleSyncMessage = (hostPos) => {
+        hostPosition = hostPos;
+        const guestPos = getScriptPosition();
+        if (guestPos === -1 || hostPos === -1) {
+            return;
+        }
+        if (guestPos !== hostPos && !guestPaused) {
+            guestPaused = true;
+            displaySystemMessage('Syncing...');
+        }
+        if (guestPos === hostPos && guestPaused) {
+            guestPaused = false;
+        }
+    };
 
     const startHostCapture = () => {
         const canvas = $('canvas');
@@ -282,6 +348,23 @@
             ['touchmove', onTouchMove],
         ];
 
+        const onKeyDown = (e) => {
+            if (!document.activeElement?.closest('#chat-panel')) {
+                sendKeyInput('keydown', e);
+            }
+        };
+        const onKeyUp = (e) => {
+            if (!document.activeElement?.closest('#chat-panel')) {
+                sendKeyInput('keyup', e);
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        hostListeners.push(
+            ['keydown', onKeyDown, window],
+            ['keyup', onKeyUp, window],
+        );
+
         const fsBtn = $('btn-fullscreen');
         const menuBtn = $('btn-menu');
         const onFullscreen = () => sendInputAction('fullscreen');
@@ -330,6 +413,11 @@
     const interceptKey = (e) => {
         if (document.activeElement?.closest('#chat-panel')) {
             e.stopImmediatePropagation();
+            return;
+        }
+        if (role === 'guest' && !trustedEvents.has(e)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
         }
     };
 

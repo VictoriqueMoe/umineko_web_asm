@@ -570,8 +570,7 @@
                 window.toNormalizedCoords = toNormalizedCoords;
 
                 function sendMouseEvent(type, x, y, button) {
-                    Module.ccall('ons_mouse_event', null,
-                        ['number','number','number','number'], [type, x, y, button]);
+                    Module._ons_mouse_event(type, x, y, button);
                 }
                 window.sendMouseEvent = sendMouseEvent;
 
@@ -612,7 +611,7 @@
                 function handleFullscreen(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    Module.ccall('ons_toggle_fullscreen');
+                    Module._ons_toggle_fullscreen();
                 }
                 function handleMenu(e) {
                     e.preventDefault();

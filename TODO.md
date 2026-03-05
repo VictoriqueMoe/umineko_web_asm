@@ -49,8 +49,8 @@
 - [x] WebRTC DataChannel for peer-to-peer messaging
 - [x] Text chat overlay (input field, message list, toggle)
 - [ ] Voice chat via MediaStream (optional)
-- [ ] Input mirroring: forward master inputs to slave via DataChannel
-- [ ] Suppress local input on slave side
+- [x] Input mirroring: forward master inputs to slave via DataChannel
+- [x] Suppress local input on slave side
 - [ ] Save file transfer for mid-game join
 - [ ] Connection status indicator and disconnect handling
 
