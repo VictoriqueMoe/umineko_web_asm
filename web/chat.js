@@ -88,7 +88,9 @@
             } else if (msg.type === 'sync' && role === 'guest') {
                 handleSyncMessage(msg.pos);
             } else if (msg.type === 'input' && role === 'guest') {
-                if (guestPaused) {
+                const isModifier = (msg.eventType === 'keydown' || msg.eventType === 'keyup') &&
+                    ['Control', 'Shift', 'Alt', 'Meta'].includes(msg.key);
+                if (guestPaused && !isModifier) {
                     return;
                 }
                 if (msg.action === 'fullscreen') {
@@ -285,12 +287,13 @@
         if (guestPos === -1 || hostPos === -1) {
             return;
         }
-        if (guestPos !== hostPos && !guestPaused) {
+        if (guestPos > hostPos && !guestPaused) {
             guestPaused = true;
             displaySystemMessage('Syncing...');
         }
-        if (guestPos === hostPos && guestPaused) {
+        if (guestPos <= hostPos && guestPaused) {
             guestPaused = false;
+            displaySystemMessage('Synced.');
         }
     };
 
@@ -412,6 +415,13 @@
 
     const interceptKey = (e) => {
         if (document.activeElement?.closest('#chat-panel')) {
+            if (e.type === 'keydown' && e.key === 'Enter') {
+                if (document.activeElement === $('chat-input')) {
+                    $('chat-send-btn').click();
+                } else if (document.activeElement === $('chat-code-input')) {
+                    $('chat-join-btn').click();
+                }
+            }
             e.stopImmediatePropagation();
             return;
         }
@@ -451,12 +461,5 @@
             }
         });
 
-        for (const input of [codeInput, chatInput]) {
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    input === codeInput ? $('chat-join-btn').click() : $('chat-send-btn').click();
-                }
-            });
-        }
     });
 })();
