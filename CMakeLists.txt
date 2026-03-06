@@ -157,7 +157,7 @@ if(EMSCRIPTEN)
         -sFORCE_FILESYSTEM
         -lidbfs.js
         -sEXPORTED_FUNCTIONS=["_main","_malloc","_free"]
-        -sEXPORTED_RUNTIME_METHODS=["ccall","cwrap","FS"]
+        -sEXPORTED_RUNTIME_METHODS=["FS"]
         -sABORTING_MALLOC=0
         -sDISABLE_EXCEPTION_CATCHING=0
         -sEXIT_RUNTIME=0

@@ -135,7 +135,10 @@ RUN mkdir -p build && cd build && \
     emmake make -j$(nproc)
 
 FROM nginx:alpine
-RUN apk add --no-cache ffmpeg libwebp-tools findutils
+RUN apk add --no-cache ffmpeg libwebp-tools findutils nodejs npm
+COPY signaling /opt/signaling
+RUN cd /opt/signaling && npm install --production && rm -rf /root/.npm
+COPY web/chat.js /usr/share/nginx/html/chat.js
 COPY --from=0 /build/umineko-web/build/umineko-web.html /usr/share/nginx/html/index.html
 COPY --from=0 /build/umineko-web/build/umineko-web.js /usr/share/nginx/html/umineko-web.js
 COPY --from=0 /build/umineko-web/build/umineko-web.wasm /usr/share/nginx/html/umineko-web.wasm
