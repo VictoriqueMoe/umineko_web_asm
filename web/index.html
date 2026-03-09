@@ -401,7 +401,7 @@
             xhr.send();
         }
 
-        function setupGameFiles() {
+        function setupGameFiles(onComplete) {
             Module.addRunDependency('manifest');
             const loadingEl = document.getElementById('loading');
 
@@ -411,6 +411,9 @@
             xhr.onload = function() {
                 if (xhr.status !== 200 || !xhr.response) {
                     console.error('Failed to load manifest');
+                    if (onComplete) {
+                        onComplete();
+                    }
                     Module.removeRunDependency('manifest');
                     return;
                 }
@@ -450,10 +453,16 @@
 
                 console.log('Filesystem setup: ' + eagerCount + ' eager, ' + lazyCount + ' lazy stubs');
                 loadingEl.textContent = 'Loading game data (' + eagerCount + ' files)...';
+                if (onComplete) {
+                    onComplete();
+                }
                 Module.removeRunDependency('manifest');
             };
             xhr.onerror = function() {
                 console.error('Failed to fetch manifest');
+                if (onComplete) {
+                    onComplete();
+                }
                 Module.removeRunDependency('manifest');
             };
             xhr.send();
@@ -504,6 +513,17 @@
                 FS.mkdir('/game');
                 FS.mkdir('/home/web_user/.onscripter');
                 FS.mount(IDBFS, {}, '/home/web_user/.onscripter');
+
+                let savedCfgData = null;
+                let manifestDone = false;
+                let idbfsDone = false;
+
+                function applySavedConfig() {
+                    if (idbfsDone && manifestDone && savedCfgData) {
+                        FS.writeFile('/game/ons.cfg', savedCfgData);
+                    }
+                }
+
                 Module.addRunDependency('idbfs-sync');
                 FS.syncfs(true, function(err) {
                     if (err) {
@@ -518,14 +538,18 @@
                             const subdir = '/home/web_user/.onscripter/' + entries[i];
                             const cfgPath = subdir + '/ons.cfg';
                             try {
-                                const data = FS.readFile(cfgPath);
-                                FS.writeFile('/game/ons.cfg', data);
+                                savedCfgData = FS.readFile(cfgPath);
                             } catch (e) {}
                         }
                     } catch (e) {}
+                    idbfsDone = true;
+                    applySavedConfig();
                     Module.removeRunDependency('idbfs-sync');
                 });
-                setupGameFiles();
+                setupGameFiles(function() {
+                    manifestDone = true;
+                    applySavedConfig();
+                });
             }],
             onRuntimeInitialized: function() {
                 document.getElementById('loading').classList.add('hidden');
