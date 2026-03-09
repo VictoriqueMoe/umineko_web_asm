@@ -258,12 +258,25 @@
     let syncInterval = null;
     let hostPosition = null;
     let guestPaused = false;
-
     const getScriptPosition = () => {
         if (typeof Module?._ons_get_script_position === 'function') {
             return Module._ons_get_script_position();
         }
         return -1;
+    };
+
+    const dispatchTrustedKey = (type, key, code, keyCode) => {
+        const evt = new KeyboardEvent(type, {key, code, keyCode, bubbles: true});
+        trustedEvents.add(evt);
+        window.dispatchEvent(evt);
+    };
+
+    let lastSyncMessage = '';
+    const displaySyncMessage = (text) => {
+        if (text !== lastSyncMessage) {
+            lastSyncMessage = text;
+            displaySystemMessage(text);
+        }
     };
 
     const startSyncBroadcast = () => {
@@ -289,11 +302,11 @@
         }
         if (guestPos > hostPos && !guestPaused) {
             guestPaused = true;
-            displaySystemMessage('Syncing...');
+            displaySyncMessage('Syncing...');
         }
         if (guestPos <= hostPos && guestPaused) {
             guestPaused = false;
-            displaySystemMessage('Synced.');
+            displaySyncMessage('Synced.');
         }
     };
 
