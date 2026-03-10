@@ -93,12 +93,12 @@ setup\setup.bat
 The script will ask you:
 
 1. **Hosting mode**:
-    - **Local** — Serves original game files directly (fast startup)
-    - **Production** — Converts assets for smaller file sizes (PNG→WebP, MP4→WebM, OGG re-encoding)
-    - **Remote** — No game files on the server. Visitors select their own Umineko game folder via the browser using the
+    - **Local** - Serves original game files directly (fast startup)
+    - **Production** - Converts assets for smaller file sizes (PNG→WebP, MP4→WebM, OGG re-encoding)
+    - **Remote** - No game files on the server. Visitors select their own Umineko game folder via the browser using the
       File System Access API (Chrome/Edge) or folder input fallback (Firefox)
-2. **Game files path** — Where your Umineko files are (default: `./game`). Skipped in remote mode.
-3. **Port** — Which port to serve on (default: `8080`)
+2. **Game files path** - Where your Umineko files are (default: `./game`). Skipped in remote mode.
+3. **Port** - Which port to serve on (default: `8080`)
 
 It generates a `.env` file, builds the container, and starts the server.
 
@@ -344,7 +344,7 @@ In **local/production mode**, the manifest is generated at container startup by 
 mode**, the manifest is built client-side by scanning the user's selected folder.
 
 **Eager files** (scripts, fonts, config) are fetched before `main()` runs via Emscripten's `addRunDependency` mechanism.
-**Lazy files** exist as 0-byte stubs — when the engine tries to read one, a patched `FileIO::openFile()` detects the
+**Lazy files** exist as 0-byte stubs - when the engine tries to read one, a patched `FileIO::openFile()` detects the
 empty stub and triggers either an async HTTP fetch (local/production) or a local file read via the File System Access
 API (remote).
 
