@@ -9,6 +9,7 @@ services:
       - asset-cache:/usr/share/nginx/html/cache
     environment:
       - HOSTING_MODE=${HOSTING_MODE:-production}
+      - SITE_URL=${SITE_URL:-}
 
 volumes:
   asset-cache:

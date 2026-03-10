@@ -1,5 +1,8 @@
 #!/bin/sh
 echo "{\"hostingMode\":\"${HOSTING_MODE:-local}\"}" > /usr/share/nginx/html/config.json
+if [ -n "$SITE_URL" ]; then
+    sed -i "s|__SITE_URL__|${SITE_URL}|g" /usr/share/nginx/html/index.html
+fi
 if [ "$HOSTING_MODE" != "remote" ]; then
     /usr/local/bin/generate-manifest.sh
 fi

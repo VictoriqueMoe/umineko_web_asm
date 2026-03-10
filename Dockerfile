@@ -143,6 +143,7 @@ COPY --from=0 /build/umineko-web/build/umineko-web.html /usr/share/nginx/html/in
 COPY --from=0 /build/umineko-web/build/umineko-web.js /usr/share/nginx/html/umineko-web.js
 COPY --from=0 /build/umineko-web/build/umineko-web.wasm /usr/share/nginx/html/umineko-web.wasm
 COPY web/js /usr/share/nginx/html/js
+COPY web/favicon /usr/share/nginx/html/favicon
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY scripts/generate-manifest.sh /usr/local/bin/generate-manifest.sh
 COPY scripts/convert-assets.sh /usr/local/bin/convert-assets.sh

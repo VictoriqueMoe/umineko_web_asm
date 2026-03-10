@@ -199,6 +199,7 @@ umineko-web/
 │       └── smpeg2/smpeg.h      # Stub header for unused smpeg2 dependency
 ├── web/
 │   ├── index.html              # HTML shell: canvas, Module definition, script loading
+│   ├── favicon/                # Favicon and web manifest files
 │   └── js/
 │       ├── fetch-indicator.js  # Loading overlay shown during lazy asset fetches
 │       ├── idbfs-sync.js       # Periodic IDBFS sync (saves to IndexedDB)
