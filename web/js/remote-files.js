@@ -59,8 +59,11 @@
     };
 
     const validateManifest = (manifest) => {
-        const missing = REQUIRED_FILES.filter(f => !manifest.files.includes(f));
+        const lowerFiles = new Set(manifest.files.map(f => f.toLowerCase()));
+        const missing = REQUIRED_FILES.filter(f => !lowerFiles.has(f));
         if (missing.length > 0) {
+            const topLevel = manifest.files.filter(f => !f.includes('/'));
+            console.warn('Validation failed. Top-level files found:', topLevel);
             return 'This does not appear to be a valid Umineko game folder (missing ' + missing.join(', ') + ').';
         }
         return null;
