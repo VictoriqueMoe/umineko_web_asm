@@ -142,6 +142,7 @@ COPY web/chat.js /usr/share/nginx/html/chat.js
 COPY --from=0 /build/umineko-web/build/umineko-web.html /usr/share/nginx/html/index.html
 COPY --from=0 /build/umineko-web/build/umineko-web.js /usr/share/nginx/html/umineko-web.js
 COPY --from=0 /build/umineko-web/build/umineko-web.wasm /usr/share/nginx/html/umineko-web.wasm
+COPY web/js /usr/share/nginx/html/js
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY scripts/generate-manifest.sh /usr/local/bin/generate-manifest.sh
 COPY scripts/convert-assets.sh /usr/local/bin/convert-assets.sh

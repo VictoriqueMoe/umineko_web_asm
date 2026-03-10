@@ -97,9 +97,11 @@ ask_hosting_mode() {
     echo "  2) Production - Converts assets for smaller file sizes (PNG->WebP,"
     echo "                  MP4->WebM, OGG re-encoding). Takes extra space on"
     echo "                  the server, runs in background on first launch."
+    echo "  3) Remote     - Users provide their own game files via browser."
+    echo "                  No game data is hosted on the server."
     echo ""
     while true; do
-        read -rp "Choose [1/2] (default: 1): " mode_choice
+        read -rp "Choose [1/2/3] (default: 1): " mode_choice
         mode_choice="${mode_choice:-1}"
         if [ "$mode_choice" = "1" ]; then
             HOSTING_MODE="local"
@@ -107,8 +109,11 @@ ask_hosting_mode() {
         elif [ "$mode_choice" = "2" ]; then
             HOSTING_MODE="production"
             break
+        elif [ "$mode_choice" = "3" ]; then
+            HOSTING_MODE="remote"
+            break
         else
-            echo "Please enter 1 or 2."
+            echo "Please enter 1, 2, or 3."
         fi
     done
     echo ""
@@ -184,11 +189,18 @@ print_success() {
     echo ""
     echo "  URL:  http://${HOST}:${PORT}"
     echo "  Mode: ${HOSTING_MODE}"
-    echo "  Game: ${GAME_PATH}"
+    if [ "$HOSTING_MODE" != "remote" ]; then
+        echo "  Game: ${GAME_PATH}"
+    fi
     echo ""
     if [ "$HOSTING_MODE" = "production" ]; then
         echo "  Asset conversion is running in the background."
         echo "  Check progress: docker compose logs -f"
+        echo ""
+    fi
+    if [ "$HOSTING_MODE" = "remote" ]; then
+        echo "  Users will be asked to select their own game folder."
+        echo "  No game files are hosted on the server."
         echo ""
     fi
     echo "  Stop:    docker compose down"
@@ -201,7 +213,12 @@ print_banner
 check_docker
 check_existing
 ask_hosting_mode
-ask_game_path
+if [ "$HOSTING_MODE" != "remote" ]; then
+    ask_game_path
+else
+    GAME_PATH="$PROJECT_ROOT/.game-placeholder"
+    mkdir -p "$GAME_PATH"
+fi
 ask_port
 generate_env
 run_docker

@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Umineko</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background: #000;
             display: flex;
@@ -15,10 +20,12 @@
             overflow: hidden;
             touch-action: none;
         }
+
         #canvas {
             display: block;
             touch-action: none;
         }
+
         #loading {
             position: absolute;
             color: #ccc;
@@ -26,7 +33,11 @@
             font-size: 14px;
             text-align: center;
         }
-        #loading.hidden { display: none; }
+
+        #loading.hidden {
+            display: none;
+        }
+
         #touch-controls {
             display: none;
             position: fixed;
@@ -35,6 +46,7 @@
             z-index: 999;
             gap: 12px;
         }
+
         #touch-controls button {
             width: 48px;
             height: 48px;
@@ -52,9 +64,11 @@
             cursor: pointer;
             backdrop-filter: blur(4px);
         }
+
         #touch-controls button:active {
             background: rgba(255, 255, 255, 0.35);
         }
+
         #mobile-notice {
             display: none;
             position: fixed;
@@ -69,6 +83,7 @@
             padding: 8px 36px 8px 12px;
             z-index: 998;
         }
+
         #mobile-notice button {
             position: absolute;
             right: 8px;
@@ -82,6 +97,7 @@
             padding: 4px;
             line-height: 1;
         }
+
         #fetch-indicator {
             display: none;
             position: fixed;
@@ -96,18 +112,99 @@
             padding: 8px 12px 6px;
             z-index: 997;
         }
+
         #fetch-bar-bg {
             height: 3px;
             background: rgba(255, 255, 255, 0.15);
             margin-top: 6px;
             border-radius: 2px;
         }
+
         #fetch-bar {
             height: 100%;
             background: #ccc;
             border-radius: 2px;
             width: 0%;
         }
+
+        #file-picker-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: sans-serif;
+            color: #ccc;
+        }
+
+        .picker-container {
+            text-align: center;
+            max-width: 480px;
+            padding: 24px;
+        }
+
+        .picker-container h1 {
+            font-size: 24px;
+            color: #e0d6c8;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .picker-container p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            color: #999;
+        }
+
+        #btn-pick-folder {
+            margin-top: 16px;
+            padding: 12px 32px;
+            font-size: 15px;
+            background: #2a2520;
+            color: #e0d6c8;
+            border: 1px solid #4a3f35;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #btn-pick-folder:hover {
+            background: #3a3025;
+        }
+
+        #btn-pick-folder:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        #scan-status {
+            margin-top: 16px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #888;
+        }
+
+        #scan-status.hidden {
+            display: none;
+        }
+
+        #picker-error {
+            margin-top: 12px;
+            color: #c44;
+            font-size: 13px;
+        }
+
+        #picker-error.hidden {
+            display: none;
+        }
+
         #chat-toggle {
             position: fixed;
             bottom: 16px;
@@ -126,9 +223,11 @@
             text-align: center;
             user-select: none;
         }
+
         #chat-toggle:hover {
             background: rgba(255, 255, 255, 0.3);
         }
+
         #chat-role {
             position: fixed;
             bottom: 68px;
@@ -143,9 +242,11 @@
             text-align: center;
             min-width: 48px;
         }
+
         #chat-role.chat-role-hidden {
             display: none;
         }
+
         #chat-panel {
             position: fixed;
             bottom: 72px;
@@ -164,15 +265,18 @@
             flex-direction: column;
             backdrop-filter: blur(8px);
         }
+
         #chat-panel.chat-hidden {
             display: none;
         }
+
         #chat-connect-title {
             font-size: 15px;
             font-weight: bold;
             margin-bottom: 10px;
             text-align: center;
         }
+
         #chat-panel button {
             width: auto;
             height: auto;
@@ -186,17 +290,21 @@
             line-height: normal;
             flex: none;
         }
+
         #chat-panel button:hover {
             background: rgba(255, 255, 255, 0.25);
         }
+
         #chat-host-btn {
             width: 100%;
             margin-bottom: 8px;
         }
+
         #chat-join-row {
             display: flex;
             gap: 6px;
         }
+
         #chat-name-input {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -208,6 +316,7 @@
             width: 100%;
             margin-bottom: 8px;
         }
+
         #chat-code-input, #chat-input {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -221,11 +330,13 @@
             height: auto;
             min-width: 0;
         }
+
         #chat-code-input {
             text-transform: uppercase;
             letter-spacing: 2px;
             text-align: center;
         }
+
         #chat-status {
             margin-top: 8px;
             color: #aaa;
@@ -233,6 +344,7 @@
             font-size: 12px;
             min-height: 16px;
         }
+
         #chat-room-code {
             font-family: monospace;
             font-size: 28px;
@@ -242,16 +354,19 @@
             padding: 12px 0;
             user-select: all;
         }
+
         #chat-waiting-status {
             text-align: center;
             color: #aaa;
             font-size: 12px;
             margin-bottom: 8px;
         }
+
         #chat-messages-view {
             display: flex;
             flex-direction: column;
         }
+
         #chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -259,399 +374,180 @@
             margin-bottom: 8px;
             padding-right: 4px;
         }
+
         .chat-msg {
             margin-bottom: 4px;
             word-wrap: break-word;
         }
+
         .chat-msg-name {
             font-weight: bold;
             color: #8cf;
         }
+
         .chat-msg-name.chat-msg-you {
             color: #aed;
         }
+
         .chat-msg-system {
             color: #888;
             font-style: italic;
         }
+
         #chat-input-row {
             display: flex;
             gap: 6px;
             margin-bottom: 6px;
         }
+
         #chat-disconnect-btn {
             width: 100%;
             background: rgba(200, 60, 60, 0.3);
             border-color: rgba(200, 60, 60, 0.4);
         }
+
         @media (max-width: 400px) {
             #chat-panel {
                 width: calc(100vw - 32px);
             }
         }
+
         @media (pointer: coarse) {
-            #touch-controls { display: flex; }
-            #mobile-notice { display: block; }
+            #touch-controls {
+                display: flex;
+            }
+
+            #mobile-notice {
+                display: block;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="mobile-notice">
-        Do not change the resolution in Config — it will break the display on mobile.
-        <button onclick="this.parentElement.style.display='none'" aria-label="Dismiss">&times;</button>
+<div id="file-picker-screen">
+    <div class="picker-container">
+        <h1>Umineko no Naku Koro ni</h1>
+        <p>Select your Umineko game folder to begin playing.</p>
+        <p>The folder should contain default.cfg and the game data files.</p>
+        <button id="btn-pick-folder">Select Game Folder</button>
+        <input type="file" id="folder-input" webkitdirectory style="display:none">
+        <div id="scan-status" class="hidden"></div>
+        <div id="picker-error" class="hidden"></div>
     </div>
-    <div id="fetch-indicator">
-        <span id="fetch-text">Loading asset...</span>
-        <div id="fetch-bar-bg"><div id="fetch-bar"></div></div>
+</div>
+<div id="mobile-notice">
+    Do not change the resolution in Config — it will break the display on mobile.
+    <button onclick="this.parentElement.style.display='none'" aria-label="Dismiss">&times;</button>
+</div>
+<div id="fetch-indicator">
+    <span id="fetch-text">Loading asset...</span>
+    <div id="fetch-bar-bg">
+        <div id="fetch-bar"></div>
     </div>
-    <div id="loading">Loading...</div>
-    <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
-    <div id="touch-controls">
-        <button id="btn-menu" aria-label="Menu">&#9776;</button>
-        <button id="btn-fullscreen" aria-label="Fullscreen">&#x26F6;</button>
-    </div>
+</div>
+<div id="loading">Loading...</div>
+<canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+<div id="touch-controls">
+    <button id="btn-menu" aria-label="Menu">&#9776;</button>
+    <button id="btn-fullscreen" aria-label="Fullscreen">&#x26F6;</button>
+</div>
 
-    <button id="chat-toggle" aria-label="Chat">&#x1F4AC;</button>
-    <div id="chat-role" class="chat-role-hidden"></div>
-    <div id="chat-panel" class="chat-hidden">
-        <div id="chat-connect">
-            <div id="chat-connect-title">Chat</div>
-            <input id="chat-name-input" type="text" maxlength="20"
-                   placeholder="Your name" autocomplete="off" spellcheck="false">
-            <button id="chat-host-btn">Host Room</button>
-            <div id="chat-join-row">
-                <input id="chat-code-input" type="text" maxlength="6"
-                       placeholder="Room code" autocomplete="off" spellcheck="false">
-                <button id="chat-join-btn">Join</button>
-            </div>
-            <div id="chat-status"></div>
+<button id="chat-toggle" aria-label="Chat">&#x1F4AC;</button>
+<div id="chat-role" class="chat-role-hidden"></div>
+<div id="chat-panel" class="chat-hidden">
+    <div id="chat-connect">
+        <div id="chat-connect-title">Chat</div>
+        <input id="chat-name-input" type="text" maxlength="20"
+               placeholder="Your name" autocomplete="off" spellcheck="false">
+        <button id="chat-host-btn">Host Room</button>
+        <div id="chat-join-row">
+            <input id="chat-code-input" type="text" maxlength="6"
+                   placeholder="Room code" autocomplete="off" spellcheck="false">
+            <button id="chat-join-btn">Join</button>
         </div>
-        <div id="chat-waiting" style="display:none">
-            <div>Room Code:</div>
-            <div id="chat-room-code"></div>
-            <div id="chat-waiting-status">Waiting for guest...</div>
-            <button id="chat-cancel-btn">Cancel</button>
-        </div>
-        <div id="chat-messages-view" style="display:none">
-            <div id="chat-messages"></div>
-            <div id="chat-input-row">
-                <input id="chat-input" type="text" placeholder="Type a message..."
-                       autocomplete="off" spellcheck="false">
-                <button id="chat-send-btn">Send</button>
-            </div>
-            <button id="chat-disconnect-btn">Disconnect</button>
-        </div>
+        <div id="chat-status"></div>
     </div>
+    <div id="chat-waiting" style="display:none">
+        <div>Room Code:</div>
+        <div id="chat-room-code"></div>
+        <div id="chat-waiting-status">Waiting for guest...</div>
+        <button id="chat-cancel-btn">Cancel</button>
+    </div>
+    <div id="chat-messages-view" style="display:none">
+        <div id="chat-messages"></div>
+        <div id="chat-input-row">
+            <input id="chat-input" type="text" placeholder="Type a message..."
+                   autocomplete="off" spellcheck="false">
+            <button id="chat-send-btn">Send</button>
+        </div>
+        <button id="chat-disconnect-btn">Disconnect</button>
+    </div>
+</div>
 
-    <script>
-        const EAGER_PATTERNS = [
-            /^default\.cfg$/,
-            /^en\.file$/,
-            /^chiru\.file$/,
-            /^ru\.file$/,
-            /^game\.hash$/,
-            /^fonts\//
-        ];
-
-        window.gameFileSet = new Set();
-
-        window._fetchName = 'asset';
-
-        window.showFetchIndicator = function(name) {
-            window._fetchName = name || 'asset';
-            document.getElementById('fetch-text').textContent = 'Loading ' + window._fetchName + '...';
-            document.getElementById('fetch-bar').style.width = '0%';
-            document.getElementById('fetch-indicator').style.display = 'block';
-        };
-        window.hideFetchIndicator = function() {
-            document.getElementById('fetch-indicator').style.display = 'none';
-        };
-        window.updateFetchProgress = function(received, total) {
-            var pct = Math.round((received / total) * 100);
-            document.getElementById('fetch-text').textContent = 'Loading ' + window._fetchName + '... ' + pct + '%';
-            document.getElementById('fetch-bar').style.width = pct + '%';
-        };
-
-        function shouldEagerLoad(path) {
-            for (let i = 0; i < EAGER_PATTERNS.length; i++) {
-                if (EAGER_PATTERNS[i].test(path)) {
-                    return true;
-                }
+<script>const Game = {};</script>
+<script src="js/fetch-indicator.js"></script>
+<script src="js/idbfs-sync.js"></script>
+<script src="js/vfs.js"></script>
+<script src="js/remote-files.js"></script>
+<script src="js/game-files.js"></script>
+<script src="js/canvas.js"></script>
+<script>
+    var Module = {
+        canvas: document.getElementById('canvas'),
+        print: (text) => console.log(text),
+        printErr: (text) => console.error(text),
+        setStatus: (text) => {
+            if (text) {
+                document.getElementById('loading').textContent = text;
             }
-            return false;
-        }
+        },
+        preRun: [() => {
+            FS.mkdir('/game');
+            FS.mkdir('/home/web_user/.onscripter');
+            FS.mount(IDBFS, {}, '/home/web_user/.onscripter');
 
-        function eagerFetch(vfsPath, url) {
-            Module.addRunDependency('file:' + vfsPath);
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.responseType = 'arraybuffer';
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    FS.writeFile(vfsPath, new Uint8Array(xhr.response));
-                } else {
-                    console.warn('Failed to fetch ' + url + ' (status ' + xhr.status + ')');
+            let savedCfgData = null;
+            let manifestDone = false;
+            let idbfsDone = false;
+
+            const applySavedConfig = () => {
+                if (idbfsDone && manifestDone && savedCfgData) {
+                    FS.writeFile('/game/ons.cfg', savedCfgData);
                 }
-                Module.removeRunDependency('file:' + vfsPath);
             };
-            xhr.onerror = function() {
-                console.warn('Failed to fetch ' + url);
-                Module.removeRunDependency('file:' + vfsPath);
-            };
-            xhr.send();
-        }
 
-        function setupGameFiles(onComplete) {
-            Module.addRunDependency('manifest');
-            const loadingEl = document.getElementById('loading');
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', '/manifest.json', true);
-            xhr.responseType = 'json';
-            xhr.onload = function() {
-                if (xhr.status !== 200 || !xhr.response) {
-                    console.error('Failed to load manifest');
-                    if (onComplete) {
-                        onComplete();
-                    }
-                    Module.removeRunDependency('manifest');
-                    return;
+            Module.addRunDependency('idbfs-sync');
+            FS.syncfs(true, (err) => {
+                if (err) {
+                    console.warn('IDBFS initial sync error:', err);
                 }
-
-                const manifest = xhr.response;
-                const dirs = manifest.dirs;
-                const files = manifest.files;
-
-                loadingEl.textContent = 'Setting up filesystem...';
-
-                for (let i = 0; i < dirs.length; i++) {
-                    try {
-                        FS.mkdirTree('/game/' + dirs[i]);
-                    } catch (e) {}
-                }
-
-                let eagerCount = 0;
-                let lazyCount = 0;
-
-                for (let i = 0; i < files.length; i++) {
-                    const filePath = files[i];
-                    const vfsPath = '/game/' + filePath;
-
-                    if (shouldEagerLoad(filePath)) {
-                        eagerFetch(vfsPath, '/game/' + filePath);
-                        eagerCount++;
-                    } else {
+                try {
+                    const entries = FS.readdir('/home/web_user/.onscripter');
+                    for (let i = 0; i < entries.length; i++) {
+                        if (entries[i] === '.' || entries[i] === '..') {
+                            continue;
+                        }
+                        const subdir = '/home/web_user/.onscripter/' + entries[i];
                         try {
-                            FS.writeFile(vfsPath, new Uint8Array(0));
-                            window.gameFileSet.add(vfsPath);
-                            lazyCount++;
+                            savedCfgData = FS.readFile(subdir + '/ons.cfg');
                         } catch (e) {
-                            console.warn('Failed to create stub: ' + vfsPath, e);
                         }
                     }
+                } catch (e) {
                 }
-
-                console.log('Filesystem setup: ' + eagerCount + ' eager, ' + lazyCount + ' lazy stubs');
-                loadingEl.textContent = 'Loading game data (' + eagerCount + ' files)...';
-                if (onComplete) {
-                    onComplete();
-                }
-                Module.removeRunDependency('manifest');
-            };
-            xhr.onerror = function() {
-                console.error('Failed to fetch manifest');
-                if (onComplete) {
-                    onComplete();
-                }
-                Module.removeRunDependency('manifest');
-            };
-            xhr.send();
-        }
-
-        (function() {
-            const origGetContext = HTMLCanvasElement.prototype.getContext;
-            HTMLCanvasElement.prototype.getContext = function(type, attrs) {
-                if (type === 'webgl' || type === 'webgl2') {
-                    attrs = attrs || {};
-                    attrs.preserveDrawingBuffer = true;
-                }
-                return origGetContext.call(this, type, attrs);
-            };
-        })();
-
-        let idbfsSyncing = false;
-        function syncIDBFS() {
-            if (idbfsSyncing) {
-                return;
-            }
-            idbfsSyncing = true;
-            try {
-                FS.syncfs(false, function(err) {
-                    idbfsSyncing = false;
-                    if (err) {
-                        console.warn('IDBFS sync error:', err);
-                    }
-                });
-            } catch (e) {
-                idbfsSyncing = false;
-            }
-        }
-
-        setInterval(syncIDBFS, 5000);
-        window.addEventListener('beforeunload', syncIDBFS);
-
-        var Module = {
-            canvas: document.getElementById('canvas'),
-            print: function(text) { console.log(text); },
-            printErr: function(text) { console.error(text); },
-            setStatus: function(text) {
-                if (text) {
-                    document.getElementById('loading').textContent = text;
-                }
-            },
-            preRun: [function() {
-                FS.mkdir('/game');
-                FS.mkdir('/home/web_user/.onscripter');
-                FS.mount(IDBFS, {}, '/home/web_user/.onscripter');
-
-                let savedCfgData = null;
-                let manifestDone = false;
-                let idbfsDone = false;
-
-                function applySavedConfig() {
-                    if (idbfsDone && manifestDone && savedCfgData) {
-                        FS.writeFile('/game/ons.cfg', savedCfgData);
-                    }
-                }
-
-                Module.addRunDependency('idbfs-sync');
-                FS.syncfs(true, function(err) {
-                    if (err) {
-                        console.warn('IDBFS initial sync error:', err);
-                    }
-                    try {
-                        const entries = FS.readdir('/home/web_user/.onscripter');
-                        for (let i = 0; i < entries.length; i++) {
-                            if (entries[i] === '.' || entries[i] === '..') {
-                                continue;
-                            }
-                            const subdir = '/home/web_user/.onscripter/' + entries[i];
-                            const cfgPath = subdir + '/ons.cfg';
-                            try {
-                                savedCfgData = FS.readFile(cfgPath);
-                            } catch (e) {}
-                        }
-                    } catch (e) {}
-                    idbfsDone = true;
-                    applySavedConfig();
-                    Module.removeRunDependency('idbfs-sync');
-                });
-                setupGameFiles(function() {
-                    manifestDone = true;
-                    applySavedConfig();
-                });
-            }],
-            onRuntimeInitialized: function() {
-                document.getElementById('loading').classList.add('hidden');
-                const canvas = document.getElementById('canvas');
-
-                const originalAspect = canvas.width / canvas.height;
-
-                function fitCanvas() {
-                    if (document.fullscreenElement) {
-                        return;
-                    }
-                    const aspect = originalAspect;
-                    const vpW = window.innerWidth;
-                    const vpH = window.innerHeight;
-                    let w, h;
-                    if (vpW / vpH > aspect) {
-                        h = vpH;
-                        w = Math.round(vpH * aspect);
-                    } else {
-                        w = vpW;
-                        h = Math.round(vpW / aspect);
-                    }
-                    canvas.style.width = w + 'px';
-                    canvas.style.height = h + 'px';
-                }
-
-                fitCanvas();
-                window.addEventListener('resize', fitCanvas);
-                document.addEventListener('fullscreenchange', function() {
-                    if (!document.fullscreenElement) {
-                        setTimeout(fitCanvas, 100);
-                    }
-                });
-
-                function toNormalizedCoords(clientX, clientY) {
-                    const rect = canvas.getBoundingClientRect();
-                    return [
-                        (clientX - rect.left) / rect.width,
-                        (clientY - rect.top) / rect.height
-                    ];
-                }
-                window.toNormalizedCoords = toNormalizedCoords;
-
-                function sendMouseEvent(type, x, y, button) {
-                    Module._ons_mouse_event(type, x, y, button);
-                }
-                window.sendMouseEvent = sendMouseEvent;
-
-                canvas.addEventListener('touchstart', function(e) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    if (e.touches.length === 1) {
-                        const touch = e.touches[0];
-                        const coords = toNormalizedCoords(touch.clientX, touch.clientY);
-                        sendMouseEvent(2, coords[0], coords[1], 0);
-                        sendMouseEvent(0, coords[0], coords[1], 0);
-                    }
-                }, { passive: false, capture: true });
-
-                canvas.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    if (e.changedTouches.length === 1) {
-                        const touch = e.changedTouches[0];
-                        const coords = toNormalizedCoords(touch.clientX, touch.clientY);
-                        sendMouseEvent(1, coords[0], coords[1], 0);
-                    }
-                }, { passive: false, capture: true });
-
-                canvas.addEventListener('touchmove', function(e) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    if (e.touches.length === 1) {
-                        const touch = e.touches[0];
-                        const coords = toNormalizedCoords(touch.clientX, touch.clientY);
-                        sendMouseEvent(2, coords[0], coords[1], 0);
-                    }
-                }, { passive: false, capture: true });
-
-                const btnFullscreen = document.getElementById('btn-fullscreen');
-                const btnMenu = document.getElementById('btn-menu');
-
-                function handleFullscreen(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    Module._ons_toggle_fullscreen();
-                }
-                function handleMenu(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    sendMouseEvent(0, 0.5, 0.5, 2);
-                    sendMouseEvent(1, 0.5, 0.5, 2);
-                }
-
-                btnFullscreen.addEventListener('touchstart', handleFullscreen, { passive: false });
-                btnFullscreen.addEventListener('click', handleFullscreen);
-                btnMenu.addEventListener('touchstart', handleMenu, { passive: false });
-                btnMenu.addEventListener('click', handleMenu);
-            }
-        };
-    </script>
-    <script src="chat.js"></script>
-    {{{ SCRIPT }}}
+                idbfsDone = true;
+                applySavedConfig();
+                Module.removeRunDependency('idbfs-sync');
+            });
+            Game.setupGameFiles(() => {
+                manifestDone = true;
+                applySavedConfig();
+            });
+        }],
+        onRuntimeInitialized: Game.initCanvas
+    };
+</script>
+<script src="chat.js"></script>
+{{{ SCRIPT }}}
 </body>
 </html>
