@@ -163,11 +163,23 @@ ask_port() {
     echo ""
 }
 
+ask_site_url() {
+    local default_url="http://${HOST}:${PORT}"
+    echo "What is the public URL for this site?"
+    echo "(Used for OpenGraph/Twitter meta tags)"
+    read -rp "URL (default: $default_url): " site_url
+    site_url="${site_url:-$default_url}"
+    site_url="${site_url%/}"
+    SITE_URL="$site_url"
+    echo ""
+}
+
 generate_env() {
     cat > .env <<EOF
 PORT="${PORT}"
 GAME_PATH="${GAME_PATH}"
 HOSTING_MODE="${HOSTING_MODE}"
+SITE_URL="${SITE_URL}"
 EOF
     echo "Generated .env"
 }
@@ -220,6 +232,7 @@ else
     mkdir -p "$GAME_PATH"
 fi
 ask_port
+ask_site_url
 generate_env
 run_docker
 print_success
