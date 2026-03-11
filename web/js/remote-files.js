@@ -1,32 +1,6 @@
 (() => {
     const REQUIRED_FILES = ['default.cfg', 'chiru.file'];
 
-    const scanDirectoryHandle = async (handle, prefix, counter) => {
-        if (!counter) {
-            counter = {count: 0};
-        }
-        const dirs = [];
-        const files = [];
-        const statusEl = document.getElementById('scan-status');
-        for await (const entry of handle.values()) {
-            const path = prefix ? prefix + '/' + entry.name : entry.name;
-            if (entry.kind === 'directory') {
-                dirs.push(path);
-                const sub = await scanDirectoryHandle(entry, path, counter);
-                dirs.push.apply(dirs, sub.dirs);
-                files.push.apply(files, sub.files);
-            } else {
-                files.push(path);
-                counter.count++;
-                if (counter.count % 1000 === 0) {
-                    statusEl.textContent = 'Scanned ' + counter.count + ' files...';
-                    await new Promise(r => setTimeout(r, 0));
-                }
-            }
-        }
-        return {dirs, files};
-    };
-
     const buildManifestFromFileList = async (fileList, statusEl) => {
         const dirSet = new Set();
         const files = [];
@@ -100,48 +74,17 @@
             Module.removeRunDependency('manifest');
         };
 
-        btnPick.addEventListener('click', async () => {
+        btnPick.addEventListener('click', () => {
             pickerError.classList.add('hidden');
+            scanStatus.textContent = 'Scanning game files...';
+            scanStatus.classList.remove('hidden');
+            btnPick.disabled = true;
+            folderInput.click();
+        });
 
-            if (window.showDirectoryPicker) {
-                try {
-                    const handle = await window.showDirectoryPicker({mode: 'read'});
-
-                    scanStatus.textContent = 'Scanning game files...';
-                    scanStatus.classList.remove('hidden');
-                    btnPick.disabled = true;
-
-                    const manifest = await scanDirectoryHandle(handle, '');
-
-                    window.readLocalFile = async (relativePath) => {
-                        try {
-                            const parts = relativePath.split('/');
-                            let current = handle;
-                            for (let i = 0; i < parts.length - 1; i++) {
-                                current = await current.getDirectoryHandle(parts[i]);
-                            }
-                            const fh = await current.getFileHandle(parts[parts.length - 1]);
-                            const file = await fh.getFile();
-                            return new Uint8Array(await file.arrayBuffer());
-                        } catch (e) {
-                            console.warn('Failed to read local file: ' + relativePath, e);
-                            return null;
-                        }
-                    };
-
-                    onFilesReady(manifest);
-                } catch (e) {
-                    if (e.name !== 'AbortError') {
-                        console.error('Directory picker error:', e);
-                        pickerError.textContent = 'Failed to open folder. Please try again.';
-                        pickerError.classList.remove('hidden');
-                    }
-                    btnPick.disabled = false;
-                    scanStatus.classList.add('hidden');
-                }
-            } else {
-                folderInput.click();
-            }
+        folderInput.addEventListener('cancel', () => {
+            scanStatus.classList.add('hidden');
+            btnPick.disabled = false;
         });
 
         folderInput.addEventListener('change', () => {
