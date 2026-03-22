@@ -1,9 +1,6 @@
 services:
   umineko-web:
-    build:
-      context: .
-      additional_contexts:
-        onscripter-ru: /Users/victoria/IdeaProjects/onscripter-ru
+    build: .
     ports:
       - "${PORT:-8080}:80"
     restart: unless-stopped
