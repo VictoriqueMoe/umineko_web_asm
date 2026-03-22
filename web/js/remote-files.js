@@ -3,7 +3,7 @@
 
     const buildManifestFromFileList = async (fileList, statusEl) => {
         const dirSet = new Set();
-        const files = [];
+        const files = {};
         const fileMap = {};
 
         for (let i = 0; i < fileList.length; i++) {
@@ -16,7 +16,7 @@
                 continue;
             }
 
-            files.push(path);
+            files[path] = file.size;
             fileMap[path] = file;
 
             for (let j = 1; j < parts.length; j++) {
@@ -33,10 +33,11 @@
     };
 
     const validateManifest = (manifest) => {
-        const lowerFiles = new Set(manifest.files.map(f => f.toLowerCase()));
+        const fileKeys = Object.keys(manifest.files);
+        const lowerFiles = new Set(fileKeys.map(f => f.toLowerCase()));
         const missing = REQUIRED_FILES.filter(f => !lowerFiles.has(f));
         if (missing.length > 0) {
-            const topLevel = manifest.files.filter(f => !f.includes('/'));
+            const topLevel = fileKeys.filter(f => !f.includes('/'));
             console.warn('Validation failed. Top-level files found:', topLevel);
             return 'This does not appear to be a valid Umineko game folder (missing ' + missing.join(', ') + ').';
         }

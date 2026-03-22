@@ -9,6 +9,7 @@
     ];
 
     window.gameFileSet = new Set();
+    window.originalFileSizes = new Map();
 
     const shouldEagerLoad = (path) => {
         for (let i = 0; i < EAGER_PATTERNS.length; i++) {
@@ -55,6 +56,7 @@
         const dirs = manifest.dirs;
         const files = manifest.files;
         const emptyStub = new Uint8Array(0);
+        const isObject = files && typeof files === 'object' && !Array.isArray(files);
 
         loadingEl.textContent = 'Setting up filesystem...';
         await new Promise(r => setTimeout(r, 0));
@@ -73,9 +75,16 @@
         let eagerCount = 0;
         let lazyCount = 0;
 
-        for (let i = 0; i < files.length; i++) {
-            const filePath = files[i];
+        const fileEntries = isObject ? Object.keys(files) : files;
+        const totalFiles = fileEntries.length;
+
+        for (let i = 0; i < totalFiles; i++) {
+            const filePath = fileEntries[i];
             const vfsPath = '/game/' + filePath;
+
+            if (isObject) {
+                window.originalFileSizes.set(vfsPath, files[filePath]);
+            }
 
             if (shouldEagerLoad(filePath)) {
                 if (isRemote) {
@@ -95,7 +104,7 @@
             }
 
             if (i % 5000 === 0 && i > 0) {
-                loadingEl.textContent = 'Registering files... ' + Math.round((i / files.length) * 100) + '%';
+                loadingEl.textContent = 'Registering files... ' + Math.round((i / totalFiles) * 100) + '%';
                 await new Promise(r => setTimeout(r, 0));
             }
         }

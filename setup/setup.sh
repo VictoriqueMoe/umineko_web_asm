@@ -174,12 +174,93 @@ ask_site_url() {
     echo ""
 }
 
+ask_classic_sprites() {
+    CLASSIC_PATH=""
+    echo "Do you have the original Umineko classic art files?"
+    echo "(Extracted arc~.nsa archives from the original PC release)"
+    echo ""
+    echo "  1) No  - Skip classic art (can add later)"
+    echo "  2) Yes - Set up classic sprite swap (press L in-game to toggle)"
+    echo ""
+    while true; do
+        read -rp "Choose [1/2] (default: 1): " classic_choice
+        classic_choice="${classic_choice:-1}"
+        if [[ "$classic_choice" == "1" ]]; then
+            echo ""
+            return
+        elif [[ "$classic_choice" == "2" ]]; then
+            break
+        else
+            echo "Please enter 1 or 2."
+        fi
+    done
+    echo ""
+
+    read -rp "Path to extracted classic archives (e.g. ~/Umineko_arc): " classic_arc_path
+    classic_arc_path="${classic_arc_path/#\~/$HOME}"
+
+    if [[ ! -d "$classic_arc_path" ]]; then
+        echo "Error: Directory '$classic_arc_path' does not exist. Skipping classic sprites."
+        echo ""
+        return
+    fi
+
+    local classic_output="$PROJECT_ROOT/classic"
+
+    if [[ -d "$classic_output/sprites" ]]; then
+        local existing_count
+        existing_count=$(find "$classic_output/sprites" -name "*.png" -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [[ "$existing_count" -gt 0 ]]; then
+            echo "Found $existing_count existing classic sprites."
+            echo "  1) Keep existing"
+            echo "  2) Regenerate from scratch"
+            while true; do
+                read -rp "Choose [1/2] (default: 1): " regen_choice
+                regen_choice="${regen_choice:-1}"
+                if [[ "$regen_choice" == "1" ]]; then
+                    CLASSIC_PATH="$classic_output"
+                    echo ""
+                    return
+                elif [[ "$regen_choice" == "2" ]]; then
+                    rm -rf "$classic_output/sprites"
+                    break
+                else
+                    echo "Please enter 1 or 2."
+                fi
+            done
+        fi
+    fi
+
+    if ! command -v vipsthumbnail &>/dev/null; then
+        echo ""
+        echo "Error: libvips is required to process classic sprites."
+        echo "Install it:"
+        echo "  macOS:  brew install vips"
+        echo "  Ubuntu: sudo apt install libvips-tools"
+        echo "Skipping classic sprites for now. Re-run setup after installing."
+        echo ""
+        return
+    fi
+
+    echo ""
+    echo "Processing classic sprites (this may take a few minutes)..."
+    echo ""
+
+    if "$PROJECT_ROOT/tools/setup-classic-sprites.sh" "$GAME_PATH" "$classic_arc_path" "$classic_output"; then
+        CLASSIC_PATH="$classic_output"
+    else
+        echo "Warning: Classic sprite setup failed. Continuing without classic art."
+        echo ""
+    fi
+}
+
 generate_env() {
     cat > .env <<EOF
 PORT="${PORT}"
 GAME_PATH="${GAME_PATH}"
 HOSTING_MODE="${HOSTING_MODE}"
 SITE_URL="${SITE_URL}"
+CLASSIC_PATH="${CLASSIC_PATH}"
 EOF
     echo "Generated .env"
 }
@@ -215,6 +296,10 @@ print_success() {
         echo "  No game files are hosted on the server."
         echo ""
     fi
+    if [ -n "${CLASSIC_PATH:-}" ]; then
+        echo "  Classic art: Enabled (press L in-game to toggle)"
+        echo ""
+    fi
     echo "  Stop:    docker compose down"
     echo "  Restart: docker compose up -d"
     echo "  Re-run:  $(realpath "${0}")"
@@ -233,6 +318,9 @@ else
 fi
 ask_port
 ask_site_url
+if [ "$HOSTING_MODE" != "remote" ]; then
+    ask_classic_sprites
+fi
 generate_env
 run_docker
 print_success

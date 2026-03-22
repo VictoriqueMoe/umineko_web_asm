@@ -3,7 +3,7 @@ GAME_DIR="/usr/share/nginx/html/game"
 MANIFEST="/usr/share/nginx/html/manifest.json"
 
 if [ ! -d "$GAME_DIR" ]; then
-    echo '{"dirs":[],"files":[]}' > "$MANIFEST"
+    echo '{"dirs":[],"files":{}}' > "$MANIFEST"
     exit 0
 fi
 
@@ -11,7 +11,7 @@ echo "Generating asset manifest..."
 
 if command -v jq >/dev/null 2>&1; then
   DIRS="$(find "$GAME_DIR" -mindepth 1 -type d -printf '%P\0' | sort -z | jq -Rsc 'split("\u0000")[:-1]')"
-  FILES="$(find "$GAME_DIR" -mindepth 1 -type f -printf '%P\0' | sort -z | jq -Rsc 'split("\u0000")[:-1]')"
+  FILES="$(find "$GAME_DIR" -mindepth 1 -type f -printf '%P\t%s\0' | sort -z | jq -Rsc '[split("\u0000")[:-1][] | split("\t") | {(.[0]): (.[1] | tonumber)}] | add // {}')"
   jq -cn --argjson dirs "$DIRS" --argjson files "$FILES" '{dirs:$dirs,files:$files}' > "$MANIFEST"
   FILE_COUNT=$(printf '%s' "$FILES" | jq -r 'length')
   DIR_COUNT=$(printf '%s' "$DIRS" | jq -r 'length')
@@ -31,19 +31,19 @@ find "$GAME_DIR" -type d | sed "s|$GAME_DIR/||" | grep -v '^$' | sort | awk '
     }
 ' >> "$MANIFEST"
 
-printf '],"files":[' >> "$MANIFEST"
-find "$GAME_DIR" -type f | sed "s|$GAME_DIR/||" | sort | awk '
+printf '],"files":{' >> "$MANIFEST"
+find "$GAME_DIR" -type f -printf '%P\t%s\n' | sort | awk -F'\t' '
     BEGIN { first = 1 }
     {
-        gsub(/\\/, "\\\\")
-        gsub(/"/, "\\\"")
+        gsub(/\\/, "\\\\", $1)
+        gsub(/"/, "\\\"", $1)
         if (!first) printf ","
-        printf "\"%s\"", $0
+        printf "\"%s\":%s", $1, $2
         first = 0
     }
 ' >> "$MANIFEST"
 
-printf ']}' >> "$MANIFEST"
+printf '}}' >> "$MANIFEST"
 
 COUNT=$(find "$GAME_DIR" -type f | wc -l)
 echo "Manifest generated: $COUNT files"

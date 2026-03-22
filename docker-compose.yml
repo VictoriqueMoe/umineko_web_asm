@@ -1,11 +1,15 @@
 services:
   umineko-web:
-    build: .
+    build:
+      context: .
+      additional_contexts:
+        onscripter-ru: /Users/victoria/IdeaProjects/onscripter-ru
     ports:
       - "${PORT:-8080}:80"
     restart: unless-stopped
     volumes:
       - ${GAME_PATH:-./game}:/usr/share/nginx/html/game:ro
+      - ${CLASSIC_PATH:-./classic}:/usr/share/nginx/html/classic:ro
       - asset-cache:/usr/share/nginx/html/cache
     environment:
       - HOSTING_MODE=${HOSTING_MODE:-production}
