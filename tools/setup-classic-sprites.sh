@@ -10,12 +10,16 @@ CLASSIC_SEARCH_PATHS=(
     "$CLASSIC_ARC_DIR/Umineko Questions/arc~.nsa/bmp/tati"
 )
 
-if ! command -v vipsthumbnail &>/dev/null; then
-    echo "Error: libvips is required but not found."
+if command -v magick &>/dev/null; then
+    MAGICK_CMD="magick"
+elif command -v convert &>/dev/null; then
+    MAGICK_CMD="convert"
+else
+    echo "Error: ImageMagick is required but not found."
     echo "Install it:"
-    echo "  macOS:  brew install vips"
-    echo "  Ubuntu: sudo apt install libvips-tools"
-    echo "  Windows: https://www.libvips.org/install.html"
+    echo "  macOS:  brew install imagemagick"
+    echo "  Ubuntu: sudo apt install imagemagick"
+    echo "  Windows: https://imagemagick.org/script/download.php"
     exit 1
 fi
 
@@ -196,12 +200,13 @@ for char_dir in "$PS3_SPRITES_DIR"/*/; do
 
         mkdir -p "$OUTPUT_DIR/sprites/$char/1"
 
-        vips thumbnail "$classic_file" "${out_file}_tmp.png" 10000 \
-            --height "$ps3_h" \
-            --no-rotate 2>/dev/null && \
-        vips gravity "${out_file}_tmp.png" "$out_file" centre "$ps3_w" "$ps3_h" \
-            --extend background --background "0 0 0 0" 2>/dev/null && \
-        rm -f "${out_file}_tmp.png"
+        $MAGICK_CMD "$classic_file" \
+            -trim +repage \
+            -resize "${ps3_w}x${ps3_h}" \
+            -background none \
+            -gravity south \
+            -extent "${ps3_w}x${ps3_h}" \
+            "$out_file" 2>/dev/null
 
         PROCESSED=$((PROCESSED + 1))
         char_mapped=$((char_mapped + 1))

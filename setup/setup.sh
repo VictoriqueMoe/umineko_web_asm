@@ -231,12 +231,12 @@ ask_classic_sprites() {
         fi
     fi
 
-    if ! command -v vipsthumbnail &>/dev/null; then
+    if ! command -v magick &>/dev/null && ! command -v convert &>/dev/null; then
         echo ""
-        echo "Error: libvips is required to process classic sprites."
+        echo "Error: ImageMagick is required to process classic sprites."
         echo "Install it:"
-        echo "  macOS:  brew install vips"
-        echo "  Ubuntu: sudo apt install libvips-tools"
+        echo "  macOS:  brew install imagemagick"
+        echo "  Ubuntu: sudo apt install imagemagick"
         echo "Skipping classic sprites for now. Re-run setup after installing."
         echo ""
         return
