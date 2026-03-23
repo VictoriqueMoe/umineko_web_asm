@@ -271,6 +271,28 @@
 </div>
 
 <script>const Game = {};</script>
+<script>
+    window.classicMode = localStorage.getItem('classicMode') === 'true';
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'g' || e.key === 'G') {
+            window.classicMode = !window.classicMode;
+            localStorage.setItem('classicMode', window.classicMode);
+            if (Module && Module._classicModeToggle) {
+                Module._classicModeToggle();
+            }
+            var indicator = document.getElementById('classic-indicator');
+            if (indicator) {
+                indicator.textContent = window.classicMode ? 'Classic Art: ON' : 'Classic Art: OFF';
+                indicator.style.opacity = '1';
+                clearTimeout(indicator._timeout);
+                indicator._timeout = setTimeout(function() { indicator.style.opacity = '0'; }, 2000);
+            }
+        }
+    });
+</script>
+<div id="classic-indicator" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);
+    color:#fff;background:rgba(0,0,0,0.7);padding:8px 20px;border-radius:6px;font-family:sans-serif;
+    font-size:14px;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.3s;"></div>
 <script src="js/fetch-indicator.js"></script>
 <script src="js/idbfs-sync.js"></script>
 <script src="js/vfs.js"></script>

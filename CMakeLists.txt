@@ -156,7 +156,7 @@ if(EMSCRIPTEN)
         -sINITIAL_MEMORY=268435456
         -sFORCE_FILESYSTEM
         -lidbfs.js
-        -sEXPORTED_FUNCTIONS=["_main","_malloc","_free"]
+        -sEXPORTED_FUNCTIONS=["_main","_malloc","_free","_classicModeToggle"]
         -sEXPORTED_RUNTIME_METHODS=["ccall","cwrap","FS"]
         -sABORTING_MALLOC=0
         -sDISABLE_EXCEPTION_CATCHING=0

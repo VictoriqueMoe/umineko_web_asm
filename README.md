@@ -25,6 +25,7 @@ PS3/Umineko Project build) entirely in the browser - no plugins, no downloads, n
     - [Graphics Pipeline](#graphics-pipeline)
     - [Audio Pipeline](#audio-pipeline)
     - [Asset Optimisation](#asset-optimisation)
+    - [Classic Art Swap](#classic-art-swap)
 - [Native Library Build Chain](#native-library-build-chain)
 - [Engine Modifications](#engine-modifications)
 
@@ -50,6 +51,9 @@ The game is fully playable in the browser. All core functionality works:
 - **On-Demand Asset Loading** - 101,000+ game files loaded lazily over HTTP, only fetching what the engine actually
   reads
 - **GPU-Accelerated Rendering** - SDL2_gpu GLES2 backend rendering through WebGL with GLSL shaders
+- **Classic Art Swap** - press **G** in-game to hot-swap between PS3 redrawn sprites and Ryukishi07's original
+  classic art. Toggle takes effect on the next sprite load (advance dialogue or change scene). See
+  [Classic Art Swap](#classic-art-swap) for details
 
 ## Known Issues
 
@@ -99,6 +103,8 @@ The script will ask you:
       File System Access API (Chrome/Edge) or folder input fallback (Firefox)
 2. **Game files path** - Where your Umineko files are (default: `./game`). Skipped in remote mode.
 3. **Port** - Which port to serve on (default: `8080`)
+4. **Classic art** (optional) - If you have extracted `arc~.nsa` archives from the original PC release, the setup
+   script will process the Ryukishi07 sprites and enable the in-game art toggle (press G). Requires ImageMagick.
 
 It generates a `.env` file, builds the container, and starts the server.
 
@@ -207,6 +213,9 @@ umineko-web/
 │       ├── remote-files.js     # Browser folder picker (File System Access API + fallback)
 │       ├── game-files.js       # Hosting mode router: fetches manifest or triggers remote mode
 │       └── canvas.js           # Canvas scaling, touch input, fullscreen handling
+├── tools/
+│   └── setup-classic-sprites.sh  # Maps + pre-processes classic Ryukishi07 sprites (bash + ImageMagick)
+├── classic/                    # Pre-processed classic sprites (generated, .gitignored)
 └── game/                       # Game assets (mounted volume, not committed)
 ```
 
@@ -471,6 +480,79 @@ Vorbis quality 4) to reduce transfer sizes while keeping the same OGG format for
 re-encoding produces a larger file than the original, the file is skipped. Small files like voice lines and sound
 effects are left untouched.
 
+### Classic Art Swap
+
+Press **G** during gameplay to toggle between the PS3 redrawn character sprites and Ryukishi07's original classic art
+from the PC release. The toggle persists across page reloads via `localStorage`.
+
+**How it works:**
+
+The game script (`en.txt`) and coordinate file (`chiru.file`) are user-supplied and read-only. The swap is implemented
+entirely at the engine and web layer without modifying any game files.
+
+```
+Press G
+  -> window.classicMode = true
+  -> classicModeToggle() clears the engine's image cache
+     and resets all sprite VFS files to 0-byte stubs
+  -> next sprite load triggers a fresh fetch
+
+Engine requests: /game/sprites/but/1/but_b11_defo1.png
+  -> FileIO.cpp checks window.classicMode
+  -> HEAD request to /classic/sprites/but/1/but_b11_defo1.png
+  -> exists, so fetch redirects there
+  -> nginx serves the pre-processed classic sprite
+  -> engine renders Ryukishi07 art at the correct position
+```
+
+Classic sprites are pre-processed to match the exact pixel dimensions of their PS3 counterparts. This ensures the
+existing hotspot coordinates in `chiru.file` position the characters correctly without any coordinate modifications.
+
+Lip-sync overlays (`sprites/{char}/2/`) are disabled in classic mode because the original art has no separate lip
+layers. The engine's `fileexist` check handles this gracefully.
+
+**Expression mapping:**
+
+The PS3 and classic sprites use different naming conventions. PS3 sprites have outfit prefixes
+(e.g., `but_b11_defo1.png` - Battler, outfit b11, default expression 1). Classic sprites have no outfit codes but
+append a variant letter (e.g., `but_defa1.png` - default expression, variant a, number 1).
+
+The mapping algorithm:
+
+1. Strip the outfit prefix: `b11_defo1` -> `defo1`
+2. Split into base expression and number: `defo` + `1`
+3. Special case: `defo` -> `def`
+4. Insert `a` before the number: `defa1`
+5. Look up the classic file; if not found, fall back to PS3 sprite
+
+All PS3 outfit variants (a11, b11, b22, d11, etc.) for the same expression map to the same classic sprite since the
+original art has only one outfit per character.
+
+**Sprite pre-processing (`tools/setup-classic-sprites.sh`):**
+
+Classic sprites from `arc~.nsa` (~830x960, with transparent padding) need to be resized to match PS3 sprite
+dimensions (~756x1219, tightly cropped). The setup script runs ImageMagick on each mapped sprite:
+
+```bash
+magick "$classic_file" \
+    -trim +repage \                    # remove transparent padding
+    -resize "${ps3_w}x${ps3_h}" \      # scale to fit within PS3 dimensions
+    -background none \                 # transparent padding
+    -gravity south \                   # anchor character at bottom
+    -extent "${ps3_w}x${ps3_h}" \      # pad to exact PS3 canvas size
+    "$output_file"
+```
+
+This produces a sprite with the classic art scaled to fill as much of the PS3 canvas as possible, anchored at the
+bottom (where feet meet the ground), with transparent padding above. The result has identical dimensions to the PS3
+sprite, so the engine's hotspot math works without modification.
+
+**Coverage:** 2,756 of 2,946 PS3 sprite expressions mapped (96.7%). 3 PS3-only characters (`cla`, `ka2`, `s55`)
+and 50 PS3-exclusive expressions (e.g., `ero`, `hohoemi`) fall back to PS3 sprites.
+
+**Setup:** Run `setup/setup.sh` and select "Yes" when asked about classic art files. Point it to your extracted
+`arc~.nsa` archives directory. Requires ImageMagick. The script processes all sprites automatically.
+
 ## Native Library Build Chain
 
 The Dockerfile builds 7 native libraries from source for Emscripten, plus uses 10 Emscripten ports:
@@ -495,17 +577,18 @@ for reproducibility.
 The [forked ONScripter-RU engine](https://github.com/VictoriqueMoe/onscripter-ru-wasm) includes Emscripten-specific
 changes across 18 source files, all gated behind `#ifdef __EMSCRIPTEN__`:
 
-| File                            | Change                                                                                |
-|---------------------------------|---------------------------------------------------------------------------------------|
-| `Support/FileIO.cpp`            | Async HTTP fetch via `EM_ASYNC_JS` with .hau content negotiation for optimised assets |
-| `Engine/Media/Controller.cpp`   | `pumpSynchronous()` - single-threaded video decode replacing threaded pipeline        |
-| `Engine/Media/Controller.cpp`   | Subtitle blending in synchronous decode path                                          |
-| `Engine/Media/VideoDecoder.cpp` | Adjusted colour space conversion for browser rendering                                |
-| `Engine/Layers/Subtitle.cpp`    | Synchronous subtitle decoding on main thread                                          |
-| `Engine/Layers/Media.cpp`       | Synchronous media layer frame pumping                                                 |
-| `Engine/Components/Async.cpp`   | Thread creation skipped (single-threaded)                                             |
-| `Engine/Core/Event.cpp`         | Periodic IDBFS sync for save persistence                                              |
-| `Engine/Core/Image.cpp`         | Frame queue management adjustments                                                    |
-| `Engine/Core/ONScripter.cpp`    | Startup path adjustments for browser environment                                      |
-| `Engine/Graphics/GPU.cpp`       | WebGL-compatible GPU initialisation                                                   |
-| `Engine/Graphics/GLES2.cpp`     | GLES2 shader compatibility                                                            |
+| File                            | Change                                                                                                                                                                                                                                                                                       |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Support/FileIO.cpp`            | Async HTTP fetch via `EM_ASYNC_JS` with .hau content negotiation for optimised assets. Classic art swap: redirects sprite fetches to `/classic/sprites/` when `window.classicMode` is true, blocks lip overlay fetches in classic mode, exports `classicModeToggle()` for cache invalidation |
+| `Engine/Core/ONScripter.hpp`    | Public `clearImageCache()` method for classic mode toggle                                                                                                                                                                                                                                    |
+| `Engine/Media/Controller.cpp`   | `pumpSynchronous()` - single-threaded video decode replacing threaded pipeline                                                                                                                                                                                                               |
+| `Engine/Media/Controller.cpp`   | Subtitle blending in synchronous decode path                                                                                                                                                                                                                                                 |
+| `Engine/Media/VideoDecoder.cpp` | Adjusted colour space conversion for browser rendering                                                                                                                                                                                                                                       |
+| `Engine/Layers/Subtitle.cpp`    | Synchronous subtitle decoding on main thread                                                                                                                                                                                                                                                 |
+| `Engine/Layers/Media.cpp`       | Synchronous media layer frame pumping                                                                                                                                                                                                                                                        |
+| `Engine/Components/Async.cpp`   | Thread creation skipped (single-threaded)                                                                                                                                                                                                                                                    |
+| `Engine/Core/Event.cpp`         | Periodic IDBFS sync for save persistence                                                                                                                                                                                                                                                     |
+| `Engine/Core/Image.cpp`         | Frame queue management adjustments                                                                                                                                                                                                                                                           |
+| `Engine/Core/ONScripter.cpp`    | Startup path adjustments for browser environment                                                                                                                                                                                                                                             |
+| `Engine/Graphics/GPU.cpp`       | WebGL-compatible GPU initialisation                                                                                                                                                                                                                                                          |
+| `Engine/Graphics/GLES2.cpp`     | GLES2 shader compatibility                                                                                                                                                                                                                                                                   |

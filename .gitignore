@@ -7,4 +7,6 @@ deps/
 *.iml
 .idea
 game
+classic/
+classic-sprite-map.json
 .env
