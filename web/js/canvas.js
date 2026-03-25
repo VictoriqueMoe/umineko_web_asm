@@ -49,9 +49,11 @@
         };
 
         const sendMouseEvent = (type, x, y, button) => {
-            Module.ccall('ons_mouse_event', null,
-                ['number', 'number', 'number', 'number'], [type, x, y, button]);
+            Module._ons_mouse_event(type, x, y, button);
         };
+
+        window.toNormalizedCoords = toNormalizedCoords;
+        window.sendMouseEvent = sendMouseEvent;
 
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -90,7 +92,7 @@
         const handleFullscreen = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            Module.ccall('ons_toggle_fullscreen');
+            Module._ons_toggle_fullscreen();
         };
 
         const handleMenu = (e) => {

@@ -230,6 +230,213 @@
             display: none;
         }
 
+        #chat-toggle {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            z-index: 1000;
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            line-height: 48px;
+            text-align: center;
+            user-select: none;
+        }
+
+        #chat-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #chat-role {
+            position: fixed;
+            bottom: 68px;
+            left: 16px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ccc;
+            font-family: sans-serif;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 48px;
+        }
+
+        #chat-role.chat-role-hidden {
+            display: none;
+        }
+
+        #chat-panel {
+            position: fixed;
+            bottom: 72px;
+            left: 16px;
+            width: 300px;
+            max-height: 400px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #eee;
+            font-family: sans-serif;
+            font-size: 13px;
+            padding: 12px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(8px);
+        }
+
+        #chat-panel.chat-hidden {
+            display: none;
+        }
+
+        #chat-connect-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        #chat-panel button {
+            width: auto;
+            height: auto;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #eee;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: normal;
+            flex: none;
+        }
+
+        #chat-panel button:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        #chat-host-btn {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        #chat-join-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        #chat-name-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #eee;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        #chat-code-input, #chat-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #eee;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: monospace;
+            outline: none;
+            flex: 1;
+            height: auto;
+            min-width: 0;
+        }
+
+        #chat-code-input {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        #chat-status {
+            margin-top: 8px;
+            color: #aaa;
+            text-align: center;
+            font-size: 12px;
+            min-height: 16px;
+        }
+
+        #chat-room-code {
+            font-family: monospace;
+            font-size: 28px;
+            letter-spacing: 4px;
+            text-align: center;
+            color: #fff;
+            padding: 12px 0;
+            user-select: all;
+        }
+
+        #chat-waiting-status {
+            text-align: center;
+            color: #aaa;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        #chat-messages-view {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 260px;
+            margin-bottom: 8px;
+            padding-right: 4px;
+        }
+
+        .chat-msg {
+            margin-bottom: 4px;
+            word-wrap: break-word;
+        }
+
+        .chat-msg-name {
+            font-weight: bold;
+            color: #8cf;
+        }
+
+        .chat-msg-name.chat-msg-you {
+            color: #aed;
+        }
+
+        .chat-msg-system {
+            color: #888;
+            font-style: italic;
+        }
+
+        #chat-input-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        #chat-disconnect-btn {
+            width: 100%;
+            background: rgba(200, 60, 60, 0.3);
+            border-color: rgba(200, 60, 60, 0.4);
+        }
+
+        @media (max-width: 400px) {
+            #chat-panel {
+                width: calc(100vw - 32px);
+            }
+        }
+
         @media (pointer: coarse) {
             #touch-controls {
                 display: flex;
@@ -268,6 +475,38 @@
 <div id="touch-controls">
     <button id="btn-menu" aria-label="Menu">&#9776;</button>
     <button id="btn-fullscreen" aria-label="Fullscreen">&#x26F6;</button>
+</div>
+
+<button id="chat-toggle" aria-label="Chat">&#x1F4AC;</button>
+<div id="chat-role" class="chat-role-hidden"></div>
+<div id="chat-panel" class="chat-hidden">
+    <div id="chat-connect">
+        <div id="chat-connect-title">Chat</div>
+        <input id="chat-name-input" type="text" maxlength="20"
+               placeholder="Your name" autocomplete="off" spellcheck="false">
+        <button id="chat-host-btn">Host Room</button>
+        <div id="chat-join-row">
+            <input id="chat-code-input" type="text" maxlength="6"
+                   placeholder="Room code" autocomplete="off" spellcheck="false">
+            <button id="chat-join-btn">Join</button>
+        </div>
+        <div id="chat-status"></div>
+    </div>
+    <div id="chat-waiting" style="display:none">
+        <div>Room Code:</div>
+        <div id="chat-room-code"></div>
+        <div id="chat-waiting-status">Waiting for guest...</div>
+        <button id="chat-cancel-btn">Cancel</button>
+    </div>
+    <div id="chat-messages-view" style="display:none">
+        <div id="chat-messages"></div>
+        <div id="chat-input-row">
+            <input id="chat-input" type="text" placeholder="Type a message..."
+                   autocomplete="off" spellcheck="false">
+            <button id="chat-send-btn">Send</button>
+        </div>
+        <button id="chat-disconnect-btn">Disconnect</button>
+    </div>
 </div>
 
 <script>const Game = {};</script>
@@ -333,6 +572,7 @@
         onRuntimeInitialized: Game.initCanvas
     };
 </script>
+<script src="chat.js"></script>
 {{{ SCRIPT }}}
 </body>
 </html>
